@@ -174,7 +174,7 @@ class InstallWizardController extends ChangeNotifier {
       notifyListeners();
     });
     final ok = await _run(() => installer.install(path));
-    await _progressSub?.cancel();
+    unawaited(_progressSub?.cancel());
     _progressSub = null;
     if (ok) {
       _progress = 1;

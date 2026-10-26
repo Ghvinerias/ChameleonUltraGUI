@@ -46,6 +46,7 @@ android {
 }
 
 dependencies {
-    implementation "com.flyfishxu:kadb:2.1.5"
+    // 2.1.2+ require compileSdk 37 (AAR metadata); this project is pinned to AGP 8.13 / compileSdk 36.
+    implementation "com.flyfishxu:kadb:2.1.1"
     testImplementation "junit:junit:4.13.2"
 }

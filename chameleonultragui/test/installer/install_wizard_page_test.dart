@@ -52,9 +52,13 @@ void main() {
     await tester.tap(
       find.widgetWithText(FilledButton, InstallerStrings.installButton),
     );
+    // The fake emits progress through zero-delay timers; pump them explicitly.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
     await tester.pumpAndSettle();
-    debugPrint(adb.calls.toString());
-    debugDumpApp();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(InstallerStrings.launchButton));
     await tester.pumpAndSettle();
     expect(find.text(InstallerStrings.aftercareTitle), findsOneWidget);

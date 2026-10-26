@@ -23,11 +23,17 @@ Date: 2026-10-26. Evaluated from README, source (shallow clones of each default 
 
 ## Recommendation
 
-**Primary: Kadb 2.1.5.** It is the only candidate that has all of: TLS pairing + TLS connect, Maven Central publication with a proper Android variant, active releases, an API for removing the stored key, and a Wear OS-focused downstream user. Progress is not built in, but wrapping the `Source` is trivial.
+**Primary: Kadb (2.1.1 pinned for now, see build result).** It is the only candidate that has all of: TLS pairing + TLS connect, Maven Central publication with a proper Android variant, active releases, an API for removing the stored key, and a Wear OS-focused downstream user. Progress is not built in, but wrapping the `Source` is trivial.
 
 **Fallback 1: adb-kt** (best install-progress API and its own BouncyCastle TLS stack, which avoids the hidden-API/Conscrypt reflection that Kadb needs on Android), but it is tiny, JitPack-only and not an Android library.
 **Fallback 2: libadb-android.**
 **Rejected: dadb** (no pairing, no wireless-debugging TLS).
+
+## Build result (verified)
+
+- `com.flyfishxu:kadb:2.1.5` **does not build** in this project: its AAR metadata requires `compileSdk >= 37`, but the app is pinned to AGP 8.13.2 / compileSdk 36 (`checkDebugAarMetadata` fails; also true for 2.1.2–2.1.4).
+- **`kadb:2.1.1`** (AAR `minCompileSdk=36`) resolves, compiles and links: `flutter build apk --debug` succeeds, the dex contains `AdbWifiPlugin` and Kadb classes, and the plugin's Kotlin unit tests (`:adb_wifi:testDebugUnitTest`) pass. The plugin therefore pins **2.1.1**. Move to the latest Kadb once the project moves to compileSdk 37 / a newer AGP. 2.1.1 lacks the fixes from 2.1.2–2.1.5 (changelog not reviewed, **[unverified]** what they fix).
+- adb-kt and dadb were not built.
 
 ## Risks that remain open
 
