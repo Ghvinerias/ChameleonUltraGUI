@@ -20,7 +20,11 @@ void main() {
   });
 
   test('folder bundle round-trips nested folders and cards', () {
-    final root = CardFolder(id: 'root', name: 'Building', color: Colors.blue);
+    final root = CardFolder(
+      id: 'root',
+      name: 'Building',
+      color: Colors.blue,
+    );
     final child = CardFolder(
       id: 'child',
       name: 'Second floor',
@@ -46,7 +50,10 @@ void main() {
     expect(decoded.folders, hasLength(2));
     expect(decoded.folders.last.parentId, root.id);
     expect(decoded.cards.single.folderId, child.id);
-    expect(decoded.folders.first.color.toARGB32(), Colors.blue.toARGB32());
+    expect(
+      decoded.folders.first.color.toARGB32(),
+      Colors.blue.toARGB32(),
+    );
   });
 
   test('folder bundle rejects unrelated JSON', () {
@@ -71,7 +78,7 @@ void main() {
       id: 'dictionary',
       name: 'Keys',
       keys: [
-        Uint8List.fromList([0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+        Uint8List.fromList([0xff, 0xff, 0xff, 0xff, 0xff, 0xff])
       ],
       keyLength: 12,
       folderId: child.id,
@@ -88,10 +95,8 @@ void main() {
     expect(decoded.rootFolderId, root.id);
     expect(decoded.folders.last.parentId, root.id);
     expect(decoded.dictionaries.single.folderId, child.id);
-    expect(
-      decoded.dictionaries.single.keys.single,
-      orderedEquals(dictionary.keys.single),
-    );
+    expect(decoded.dictionaries.single.keys.single,
+        orderedEquals(dictionary.keys.single));
   });
 
   test('legacy dictionary JSON remains outside folders', () {

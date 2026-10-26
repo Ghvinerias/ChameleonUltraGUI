@@ -8,14 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('long press and drag applies the initial key action in bulk', (
-    tester,
-  ) async {
-    final checkMarks = List.filled(
-      80,
-      ChameleonKeyCheckmark.none,
-      growable: false,
-    );
+  testWidgets('long press and drag applies the initial key action in bulk',
+      (tester) async {
+    final checkMarks =
+        List.filled(80, ChameleonKeyCheckmark.none, growable: false);
     final validKeys = List.generate(80, (_) => Uint8List(0), growable: false);
 
     await tester.pumpWidget(
