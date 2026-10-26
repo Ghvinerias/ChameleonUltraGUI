@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:chameleonultragui/helpers/definitions.dart';
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,9 @@ class CardSave {
   Color color;
   String? folderId;
 
+  /// Last modification time (epoch ms). Null for legacy data.
+  int? updatedAt;
+
   factory CardSave.fromJson(String json) {
     Map<String, dynamic> data = jsonDecode(json);
     final id = data['id'] as String;
@@ -28,25 +32,29 @@ class CardSave {
     final name = data['name'] as String;
     final tag = getTagTypeByValue(data['tag']);
     final extraData = CardSaveExtra.import(data['extra'] ?? {});
-    final color =
-        data['color'] == null ? Colors.deepOrange : hexToColor(data['color']);
+    final color = data['color'] == null
+        ? Colors.deepOrange
+        : hexToColor(data['color']);
     final folderId = data['folderId'] as String?;
+    final updatedAt = data['updatedAt'] as int?;
     List<Uint8List> tagData = (data['data'] as List<dynamic>)
         .map((e) => Uint8List.fromList(List<int>.from(e)))
         .toList();
 
     return CardSave(
-        id: id,
-        uid: uid,
-        sak: sak,
-        name: name,
-        tag: tag,
-        data: tagData,
-        color: color,
-        folderId: folderId,
-        extraData: extraData,
-        ats: Uint8List.fromList(ats),
-        atqa: Uint8List.fromList(atqa));
+      id: id,
+      uid: uid,
+      sak: sak,
+      name: name,
+      tag: tag,
+      data: tagData,
+      color: color,
+      folderId: folderId,
+      updatedAt: updatedAt,
+      extraData: extraData,
+      ats: Uint8List.fromList(ats),
+      atqa: Uint8List.fromList(atqa),
+    );
   }
 
   String toJson() {
@@ -62,6 +70,7 @@ class CardSave {
       'data': data.map((data) => data.toList()).toList(),
       'extra': extraData.export(),
       if (folderId != null) 'folderId': folderId,
+      if (updatedAt != null) 'updatedAt': updatedAt,
     });
   }
 
@@ -76,12 +85,13 @@ class CardSave {
     CardSaveExtra? extraData,
     this.color = Colors.deepOrange,
     this.folderId,
+    this.updatedAt,
     this.data = const [],
-  })  : id = id ?? const Uuid().v4(),
-        sak = sak ?? 0,
-        atqa = atqa ?? Uint8List(0),
-        ats = ats ?? Uint8List(0),
-        extraData = extraData ?? CardSaveExtra();
+  }) : id = id ?? const Uuid().v4(),
+       sak = sak ?? 0,
+       atqa = atqa ?? Uint8List(0),
+       ats = ats ?? Uint8List(0),
+       extraData = extraData ?? CardSaveExtra();
 }
 
 class CardSaveExtra {
@@ -92,7 +102,8 @@ class CardSaveExtra {
   factory CardSaveExtra.import(Map<String, dynamic> data) {
     List<int> readBytes(Map<String, dynamic> data, String key) {
       return List<int>.from(
-          data[key] != null ? data[key] as List<dynamic> : []);
+        data[key] != null ? data[key] as List<dynamic> : [],
+      );
     }
 
     final ultralightSignature = readBytes(data, 'ultralightSignature');
@@ -102,9 +113,10 @@ class CardSaveExtra {
         : <int>[];
 
     return CardSaveExtra(
-        ultralightSignature: Uint8List.fromList(ultralightSignature),
-        ultralightVersion: Uint8List.fromList(ultralightVersion),
-        ultralightCounters: ultralightCounters);
+      ultralightSignature: Uint8List.fromList(ultralightSignature),
+      ultralightVersion: Uint8List.fromList(ultralightVersion),
+      ultralightCounters: ultralightCounters,
+    );
   }
 
   Map<String, dynamic> export() {
@@ -125,11 +137,11 @@ class CardSaveExtra {
     return json;
   }
 
-  CardSaveExtra(
-      {Uint8List? ultralightSignature,
-      Uint8List? ultralightVersion,
-      List<int>? ultralightCounters})
-      : ultralightSignature = ultralightSignature ?? Uint8List(0),
-        ultralightVersion = ultralightVersion ?? Uint8List(0),
-        ultralightCounters = ultralightCounters ?? <int>[];
+  CardSaveExtra({
+    Uint8List? ultralightSignature,
+    Uint8List? ultralightVersion,
+    List<int>? ultralightCounters,
+  }) : ultralightSignature = ultralightSignature ?? Uint8List(0),
+       ultralightVersion = ultralightVersion ?? Uint8List(0),
+       ultralightCounters = ultralightCounters ?? <int>[];
 }

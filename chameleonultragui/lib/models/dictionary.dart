@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -11,6 +12,9 @@ class Dictionary {
   Color color;
   int keyLength;
   String? folderId;
+
+  /// Last modification time (epoch ms). Null for legacy data.
+  int? updatedAt;
 
   factory Dictionary.fromJson(String json) {
     Map<String, dynamic> data = jsonDecode(json);
@@ -29,18 +33,21 @@ class Dictionary {
     final keyLength = data['keyLength'] as int;
     final color = hexToColor(data['color']);
     final folderId = data['folderId'] as String?;
+    final updatedAt = data['updatedAt'] as int?;
 
     List<Uint8List> keys = [];
     for (var key in encodedKeys) {
       keys.add(Uint8List.fromList(List<int>.from(key)));
     }
     return Dictionary(
-        id: id,
-        name: name,
-        keys: keys,
-        color: color,
-        keyLength: keyLength,
-        folderId: folderId);
+      id: id,
+      name: name,
+      keys: keys,
+      color: color,
+      keyLength: keyLength,
+      folderId: folderId,
+      updatedAt: updatedAt,
+    );
   }
 
   String toJson() {
@@ -51,6 +58,7 @@ class Dictionary {
       'keys': keys.map((key) => key.toList()).toList(),
       'keyLength': keyLength,
       if (folderId != null) 'folderId': folderId,
+      if (updatedAt != null) 'updatedAt': updatedAt,
     });
   }
 
@@ -67,8 +75,11 @@ class Dictionary {
     return const Utf8Encoder().convert(toString());
   }
 
-  factory Dictionary.fromString(String input,
-      {String name = '', Color color = Colors.deepOrange}) {
+  factory Dictionary.fromString(
+    String input, {
+    String name = '',
+    Color color = Colors.deepOrange,
+  }) {
     List<Uint8List> keys = [];
     List<int> allowedKeySizes = [
       12, // 6 - Mifare Classic
@@ -96,21 +107,23 @@ class Dictionary {
     }
 
     return Dictionary(
-        id: const Uuid().v4(),
-        name: name,
-        keys: keys,
-        color: color,
-        keyLength: currentKeySize);
+      id: const Uuid().v4(),
+      name: name,
+      keys: keys,
+      color: color,
+      keyLength: currentKeySize,
+    );
   }
 
-  Dictionary(
-      {String? id,
-      this.name = "",
-      this.keys = const [],
-      this.color = Colors.deepOrange,
-      this.keyLength = 0,
-      this.folderId})
-      : id = id ?? const Uuid().v4();
+  Dictionary({
+    String? id,
+    this.name = "",
+    this.keys = const [],
+    this.color = Colors.deepOrange,
+    this.keyLength = 0,
+    this.folderId,
+    this.updatedAt,
+  }) : id = id ?? const Uuid().v4();
 }
 
 class DictionaryFolder {
@@ -119,11 +132,15 @@ class DictionaryFolder {
   Color color;
   String? parentId;
 
+  /// Last modification time (epoch ms). Null for legacy data.
+  int? updatedAt;
+
   DictionaryFolder({
     String? id,
     required this.name,
     this.color = Colors.deepOrange,
     this.parentId,
+    this.updatedAt,
   }) : id = id ?? const Uuid().v4();
 
   factory DictionaryFolder.fromJson(String source) {
@@ -135,15 +152,17 @@ class DictionaryFolder {
           ? Colors.deepOrange
           : hexToColor(data['color'] as String),
       parentId: data['parentId'] as String?,
+      updatedAt: data['updatedAt'] as int?,
     );
   }
 
   String toJson() => jsonEncode({
-        'id': id,
-        'name': name,
-        'color': colorToHex(color),
-        if (parentId != null) 'parentId': parentId,
-      });
+    'id': id,
+    'name': name,
+    'color': colorToHex(color),
+    if (parentId != null) 'parentId': parentId,
+    if (updatedAt != null) 'updatedAt': updatedAt,
+  });
 }
 
 class DictionaryFolderBundle {
@@ -175,13 +194,12 @@ class DictionaryFolderBundle {
   }
 
   String toJson() => jsonEncode({
-        'format': 'chameleon-ultra-gui-dictionary-folder',
-        'version': 1,
-        'rootFolderId': rootFolderId,
-        'folders':
-            folders.map((folder) => jsonDecode(folder.toJson())).toList(),
-        'dictionaries': dictionaries
-            .map((dictionary) => jsonDecode(dictionary.toJson()))
-            .toList(),
-      });
+    'format': 'chameleon-ultra-gui-dictionary-folder',
+    'version': 1,
+    'rootFolderId': rootFolderId,
+    'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
+    'dictionaries': dictionaries
+        .map((dictionary) => jsonDecode(dictionary.toJson()))
+        .toList(),
+  });
 }

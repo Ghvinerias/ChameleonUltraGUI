@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:chameleonultragui/models/card_save.dart';
 import 'package:flutter/material.dart';
@@ -10,11 +11,15 @@ class CardFolder {
   Color color;
   String? parentId;
 
+  /// Last modification time (epoch ms). Null for legacy data.
+  int? updatedAt;
+
   CardFolder({
     String? id,
     required this.name,
     this.color = Colors.deepOrange,
     this.parentId,
+    this.updatedAt,
   }) : id = id ?? const Uuid().v4();
 
   factory CardFolder.fromJson(String source) {
@@ -26,15 +31,17 @@ class CardFolder {
           ? Colors.deepOrange
           : hexToColor(data['color'] as String),
       parentId: data['parentId'] as String?,
+      updatedAt: data['updatedAt'] as int?,
     );
   }
 
   String toJson() => jsonEncode({
-        'id': id,
-        'name': name,
-        'color': colorToHex(color),
-        if (parentId != null) 'parentId': parentId,
-      });
+    'id': id,
+    'name': name,
+    'color': colorToHex(color),
+    if (parentId != null) 'parentId': parentId,
+    if (updatedAt != null) 'updatedAt': updatedAt,
+  });
 }
 
 /// Versioned Chameleon Ultra GUI folder interchange format.
@@ -67,11 +74,10 @@ class CardFolderBundle {
   }
 
   String toJson() => jsonEncode({
-        'format': 'chameleon-ultra-gui-folder',
-        'version': 1,
-        'rootFolderId': rootFolderId,
-        'folders':
-            folders.map((folder) => jsonDecode(folder.toJson())).toList(),
-        'cards': cards.map((card) => jsonDecode(card.toJson())).toList(),
-      });
+    'format': 'chameleon-ultra-gui-folder',
+    'version': 1,
+    'rootFolderId': rootFolderId,
+    'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
+    'cards': cards.map((card) => jsonDecode(card.toJson())).toList(),
+  });
 }
