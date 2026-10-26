@@ -40,11 +40,11 @@ jobs:
         with:
           channel: "stable"
       - run: flutter pub get
-      - run: flutter build appbundle --build-number ${{ github.run_number }}
+      - run: flutter build appbundle --flavor phone --build-number ${{ github.run_number }}
       - uses: actions/upload-artifact@v7
         with:
           name: appbundle
-          path: chameleonultragui/build/app/outputs/bundle/release/app-release.aab
+          path: chameleonultragui/build/app/outputs/bundle/phoneRelease/app-phone-release.aab
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:

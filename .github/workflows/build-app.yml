@@ -31,11 +31,49 @@ jobs:
         with:
           channel: "stable"
       - run: flutter pub get
-      - run: flutter build apk --build-number ${{ github.run_number }}
+      - run: flutter build apk --flavor phone --build-number ${{ github.run_number }}
       - uses: actions/upload-artifact@v7
         with:
           name: apk
-          path: chameleonultragui/build/app/outputs/flutter-apk/app-release.apk
+          path: chameleonultragui/build/app/outputs/flutter-apk/app-phone-release.apk
+
+  build-wear-apk:
+    needs: check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./chameleonultragui
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      - run: flutter pub get
+      - run: flutter build apk --flavor wear -t lib/wear/main_wear.dart --build-number ${{ github.run_number }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wear-apk
+          path: chameleonultragui/build/app/outputs/flutter-apk/app-wear-release.apk
+
+  check-signing:
+    needs:
+      - build-android
+      - build-wear-apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "{apk,wear-apk}"
+          path: signing-check
+      - run: >-
+          chameleonultragui/tool/check_signing.sh
+          signing-check/apk/app-phone-release.apk
+          signing-check/wear-apk/app-wear-release.apk
 
   build-windows:
     needs: check
@@ -160,6 +198,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - build-android
+      - build-wear-apk
       - build-windows
       - build-linux
       - build-linux-legacy
@@ -169,7 +208,7 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: "{apk,windows,windows-installer,linux,linux-debian,linux-legacy}"
+          pattern: "{apk,wear-apk,windows,windows-installer,linux,linux-debian,linux-legacy}"
           path: release-artifacts
       - name: Create zip files from artifacts
         run: |
@@ -204,6 +243,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'dev')
     needs:
       - build-android
+      - build-wear-apk
       - build-windows
       - build-linux
       - build-linux-legacy
@@ -213,7 +253,7 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: "{apk,windows,windows-installer,linux,linux-debian,linux-legacy}"
+          pattern: "{apk,wear-apk,windows,windows-installer,linux,linux-debian,linux-legacy}"
           path: release-artifacts
       - name: Create zip files from artifacts
         run: |
