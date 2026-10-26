@@ -64,7 +64,8 @@ class _LoopbackSerial extends AbstractSerial {
     if (cmd == ChameleonCommand.mf1GetAntiCollData.value) {
       getAntiCollisionReads++;
       await messageCallback(
-          _response(cmd, _antiCollisionPayload ?? Uint8List(0)));
+        _response(cmd, _antiCollisionPayload ?? Uint8List(0)),
+      );
       return true;
     }
 
@@ -77,40 +78,41 @@ void main() {
   test('ISO14443-4 is exposed as a high-frequency card type', () {
     expect(numberToChameleonTag(3000), TagType.hf14a4);
     expect(chameleonTagToFrequency(TagType.hf14a4), TagFrequency.hf);
-    expect(
-      getTagTypesByFrequency(TagFrequency.hf),
-      contains(TagType.hf14a4),
-    );
+    expect(getTagTypesByFrequency(TagFrequency.hf), contains(TagType.hf14a4));
     expect(
       getTagTypesByFrequency(TagFrequency.lf),
       isNot(contains(TagType.hf14a4)),
     );
   });
 
-  test('ISO14443-4 slot identity round-trips through device protocol',
-      () async {
-    final log = Logger(level: Level.off);
-    final serial = _LoopbackSerial(log);
-    final communicator = ChameleonCommunicator(log, port: serial);
-    final original = CardSave(
-      uid: '04 01 02 03 04 05 06 07 08 09',
-      name: 'ISO card',
-      tag: TagType.hf14a4,
-      sak: 0x20,
-      atqa: Uint8List.fromList([0x03, 0x44]),
-      ats: Uint8List.fromList([0x06, 0x75, 0x77, 0x81, 0x02, 0x80]),
-    );
+  test(
+    'ISO14443-4 slot identity round-trips through device protocol',
+    () async {
+      final log = Logger(level: Level.off);
+      final serial = _LoopbackSerial(log);
+      final communicator = ChameleonCommunicator(log, port: serial);
+      final original = CardSave(
+        uid: '04 01 02 03 04 05 06 07 08 09',
+        name: 'ISO card',
+        tag: TagType.hf14a4,
+        sak: 0x20,
+        atqa: Uint8List.fromList([0x03, 0x44]),
+        ats: Uint8List.fromList([0x06, 0x75, 0x77, 0x81, 0x02, 0x80]),
+      );
 
-    await writeHf14a4SlotIdentity(communicator, original);
-    final exported =
-        await readHf14a4SlotIdentity(communicator, 'Exported ISO card');
+      await writeHf14a4SlotIdentity(communicator, original);
+      final exported = await readHf14a4SlotIdentity(
+        communicator,
+        'Exported ISO card',
+      );
 
-    expect(exported.tag, TagType.hf14a4);
-    expect(exported.uid, original.uid);
-    expect(exported.sak, original.sak);
-    expect(exported.atqa, orderedEquals(original.atqa));
-    expect(exported.ats, orderedEquals(original.ats));
-    expect(exported.data, isEmpty);
-    expect(serial.getAntiCollisionReads, 1);
-  });
+      expect(exported.tag, TagType.hf14a4);
+      expect(exported.uid, original.uid);
+      expect(exported.sak, original.sak);
+      expect(exported.atqa, orderedEquals(original.atqa));
+      expect(exported.ats, orderedEquals(original.ats));
+      expect(exported.data, isEmpty);
+      expect(serial.getAntiCollisionReads, 1);
+    },
+  );
 }
