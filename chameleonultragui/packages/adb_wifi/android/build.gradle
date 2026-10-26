@@ -1,0 +1,52 @@
+group = "io.chameleon.adbwifi"
+version = "1.0"
+
+buildscript {
+    ext.kotlin_version = "2.4.20"
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // Kadb pulls spake2-java from JitPack.
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "io.chameleon.adbwifi"
+    compileSdk = 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk = 24
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnit()
+        }
+    }
+}
+
+dependencies {
+    // 2.1.2+ require compileSdk 37 (AAR metadata); this project is pinned to AGP 8.13 / compileSdk 36.
+    implementation "com.flyfishxu:kadb:2.1.1"
+    testImplementation "junit:junit:4.13.2"
+}
