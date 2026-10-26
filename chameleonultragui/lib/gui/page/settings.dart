@@ -4,6 +4,7 @@ import 'package:chameleonultragui/gui/component/toggle_buttons.dart';
 import 'package:chameleonultragui/gui/menu/dialogs/qr/settings.dart';
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:chameleonultragui/helpers/github.dart';
+import 'package:chameleonultragui/installer/ui/install_on_watch_tile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -659,7 +660,11 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                 ),
                 child: Text(
                     "${appState.sharedPreferencesProvider.isDebugMode() ? localizations.deactivate : localizations.activate} ${localizations.debug_mode.toLowerCase()}"),
-              )
+              ),
+              if (appState.devMode && Platform.isAndroid) ...[
+                const SizedBox(height: 10),
+                const InstallOnWatchTile(),
+              ],
             ],
           ),
         ),
