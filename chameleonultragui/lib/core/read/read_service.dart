@@ -79,6 +79,10 @@ enum ReadErrorCode {
 
   /// Anything else; see [ReadFailed.detail].
   unknown,
+
+  /// ADDITIVE (T1a). The card needs a hardnested attack but
+  /// [HfReadOptions.allowHardnested] is false (the watch cannot run it).
+  hardnestedUnavailable,
 }
 
 /// Coarse phase of a read, for progress UIs.
@@ -197,6 +201,10 @@ final class ReadRecoveryProgress extends ReadEvent {
   /// Keys recovered so far in this read.
   final int keysFound;
 
+  /// ADDITIVE (T1a). True for the nested attack that is seeded through the
+  /// card's backdoor key (the phone shows a dedicated string for it).
+  final bool viaBackdoor;
+
   const ReadRecoveryProgress({
     required this.attack,
     required this.step,
@@ -204,6 +212,7 @@ final class ReadRecoveryProgress extends ReadEvent {
     this.keyType,
     this.progress,
     this.keysFound = 0,
+    this.viaBackdoor = false,
   });
 }
 
@@ -352,11 +361,17 @@ class HfReadOptions {
   /// Mirrors `MifareClassicRecovery.checkKeys(skipDefaultDictionary:)`.
   final bool skipDefaultDictionary;
 
+  /// ADDITIVE (T1a). When false, a card that needs the hardnested attack ends
+  /// the read with `ReadFailed(ReadErrorCode.hardnestedUnavailable)` instead
+  /// of running it. The watch passes false (hardnested needs ~1.2 GB).
+  final bool allowHardnested;
+
   const HfReadOptions({
     this.depth = MifareClassicDepth.identify,
     this.dictionaries = const [],
     this.primaryDictionaryId,
     this.skipDefaultDictionary = false,
+    this.allowHardnested = true,
   });
 }
 
