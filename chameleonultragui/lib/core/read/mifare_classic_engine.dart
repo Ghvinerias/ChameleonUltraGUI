@@ -857,7 +857,11 @@ class MifareClassicEngine {
     cardData = newCardData();
 
     for (var sector = 0; sector < _sectorCount; sector++) {
-      for (var block = 0; block < mfClassicGetBlockCountBySector(sector); block++) {
+      for (
+        var block = 0;
+        block < mfClassicGetBlockCountBySector(sector);
+        block++
+      ) {
         for (var keyType = 0; keyType < 2; keyType++) {
           log?.d("Dumping sector $sector, block $block with key $keyType");
 

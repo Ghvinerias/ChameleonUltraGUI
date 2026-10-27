@@ -53,6 +53,28 @@ by their own tracks under the same rule.
   `helpers/mifare_classic/general.dart`. If T1 moves that enum, T1 updates the
   import; the type name stays.
 
+## Additive changes made by Track T1a (read service)
+
+All backward compatible; `lib/core/read/read_service.dart`:
+
+- `ReadErrorCode.hardnestedUnavailable`: the card needs the hardnested attack
+  but `HfReadOptions.allowHardnested` is false. Terminal `ReadFailed`.
+- `HfReadOptions.allowHardnested` (default `true`; the watch passes `false`).
+- `ReadRecoveryProgress.viaBackdoor` (default `false`): the nested attack
+  seeded through the card's backdoor key.
+- Conventions (no signature change): an old firmware that returns no hardnested
+  nonces ends with `ReadFailed(recoveryFailed, detail: 'firmware_too_old')`;
+  `ReadDumpProgress.blocksDone` is the index of the block just read (the phone's
+  progress bar value), so the last event is `blocksTotal - 1`.
+- `continueMifareClassic` is cumulative: from `identify` with depth
+  `recoverKeys` it runs the key check first; recovery is skipped when all keys
+  are already found.
+
+Implementation: `ReadServiceImpl` (`lib/core/read/read_service_impl.dart`),
+headless engine `MifareClassicEngine`, injectable `KeyRecoveryBackend`
+(`NativeKeyRecoveryBackend` is the default, tests use
+`test/core/read/fake_key_recovery_backend.dart`).
+
 ## Test doubles (`test/fakes/`)
 
 - `FakeChameleonCommunicator` (+ `FakeCard`): subclass of

@@ -1,3 +1,5 @@
+import 'package:chameleonultragui/core/read/read_service.dart';
+import 'package:chameleonultragui/core/read/read_service_impl.dart';
 import 'package:chameleonultragui/gui/component/card_button.dart';
 import 'package:chameleonultragui/gui/component/mifare/classic.dart';
 import 'package:chameleonultragui/gui/component/error_message.dart';
@@ -120,16 +122,15 @@ class ReadCardPageState extends State<ReadCardPage> {
       lfInfo = LFCardInfo();
     });
 
-    if (!await appState.communicator!.isReaderDeviceMode()) {
-      await appState.communicator!.setReaderDeviceMode(true);
+    final terminal = await phoneReadService(appState).readLf().terminal;
+    if (terminal is ReadFailed) {
+      throw ReadFailedException(terminal.code, terminal.detail);
     }
 
-    LFCard? card = await appState.communicator!.readEM410X();
-    card ??= await appState.communicator!.readHIDProx();
-    card ??= await appState.communicator!.readViking();
-    card ??= await appState.communicator!.readPac();
-    card ??= await appState.communicator!.readIoProx();
-
+    LFCard? card;
+    if (terminal is ReadDone && terminal.result is LfReadResult) {
+      card = (terminal.result as LfReadResult).card;
+    }
 
     if (card != null) {
       setState(() {

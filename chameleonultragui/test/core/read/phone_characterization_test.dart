@@ -407,7 +407,11 @@ void main() {
         FakeCard.none(),
         FakeCard.mfc1kDefaultKeys(),
       ]);
-      comm.scanScript = [FakeCard.none(), FakeCard.none(), FakeCard.mfc1kDefaultKeys()];
+      comm.scanScript = [
+        FakeCard.none(),
+        FakeCard.none(),
+        FakeCard.mfc1kDefaultKeys(),
+      ];
       await page.startContinuousHFScan();
       expect(comm.hfScanCount, 1);
       expect(page.isContinuousHFScan, isTrue);

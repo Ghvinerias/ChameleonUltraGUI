@@ -52,9 +52,7 @@ class ReadServiceImpl implements ReadService {
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
-  ReadSession _start(
-    Future<ReadEvent> Function(_ReadSession session) body,
-  ) {
+  ReadSession _start(Future<ReadEvent> Function(_ReadSession session) body) {
     if (_active != null && !_active!.isFinished) {
       throw StateError('A read session is already running on this device');
     }
@@ -95,34 +93,24 @@ class ReadServiceImpl implements ReadService {
   ReadSession startContinuousHfScan({
     ContinuousScanOptions options = const ContinuousScanOptions(),
   }) => _start(
-    (s) => _continuous(
-      s,
-      options,
-      (attempt) async {
-        try {
-          final result = await _readHfOnce(s, options.hf, attempt);
-          return result.cardPresent ? result : null;
-        } on _CardLost {
-          return null; // same as the phone: not a card yet, keep scanning
-        }
-      },
-      (found) => ReadDone(found as HfReadResult),
-    ),
+    (s) => _continuous(s, options, (attempt) async {
+      try {
+        final result = await _readHfOnce(s, options.hf, attempt);
+        return result.cardPresent ? result : null;
+      } on _CardLost {
+        return null; // same as the phone: not a card yet, keep scanning
+      }
+    }, (found) => ReadDone(found as HfReadResult)),
   );
 
   @override
   ReadSession startContinuousLfScan({
     ContinuousScanOptions options = const ContinuousScanOptions(),
   }) => _start(
-    (s) => _continuous(
-      s,
-      options,
-      (attempt) async {
-        final card = await _readLfOnce(s, attempt);
-        return card == null ? null : LfReadResult(card: card);
-      },
-      (found) => ReadDone(found as LfReadResult),
-    ),
+    (s) => _continuous(s, options, (attempt) async {
+      final card = await _readLfOnce(s, attempt);
+      return card == null ? null : LfReadResult(card: card);
+    }, (found) => ReadDone(found as LfReadResult)),
   );
 
   // ---- continuous ---------------------------------------------------------
@@ -452,7 +440,9 @@ class _ReadSession implements ReadSession {
     });
   }
 
-  Future<void> _run(Future<ReadEvent> Function(_ReadSession session) body) async {
+  Future<void> _run(
+    Future<ReadEvent> Function(_ReadSession session) body,
+  ) async {
     ReadEvent terminal;
     try {
       terminal = await body(this);
