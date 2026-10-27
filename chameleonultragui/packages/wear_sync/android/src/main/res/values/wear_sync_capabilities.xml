@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Advertises this app to the paired device; merged into both the phone and watch apps. -->
+<resources>
+    <string-array name="android_wear_capabilities">
+        <item>chameleon_ultra_sync</item>
+    </string-array>
+</resources>

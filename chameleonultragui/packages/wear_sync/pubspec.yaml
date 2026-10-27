@@ -1,0 +1,19 @@
+name: wear_sync
+description: Android-only Flutter plugin exposing the Wear OS Data Layer (MessageClient, ChannelClient, CapabilityClient) for phone <-> watch sync.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: io.chameleon.wearsync
+        pluginClass: WearSyncPlugin
