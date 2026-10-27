@@ -88,7 +88,7 @@ jobs:
           channel: "stable"
       - run: flutter config --enable-windows-desktop
       - run: flutter build windows --build-number ${{ github.run_number }}
-      - run: flutter test
+      - run: flutter test --exclude-tags golden
       - uses: actions/upload-artifact@v7
         with:
           name: windows

@@ -1,0 +1,4 @@
+tags:
+  # Image goldens are generated on Linux; font rendering differs on other
+  # platforms, so CI on Windows/macOS runs `flutter test --exclude-tags golden`.
+  golden:
