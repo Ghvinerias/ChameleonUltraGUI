@@ -69,3 +69,69 @@ by their own tracks under the same rule.
   `setPeerAvailable`, cancel from either side and link-loss aborts.
 
 Both are exercised by `test/fakes/*_test.dart`.
+
+## Sync engine (Track T4)
+
+Implementation: `lib/sync/sync_engine.dart` (`SyncEngine`, `SyncSession`),
+`sync_run.dart` (protocol), `sync_records.dart` (records, snapshot,
+`computeSyncPlan`), `sync_normalize.dart` (orphan repair), `sync_blob.dart`
+(chunking/resume), `sync_report.dart`, `sync_errors.dart`, `sync_types.dart`.
+Model helpers: `lib/models/sync_extensions.dart`. Test doubles:
+`test/fakes/in_memory_{card,dictionary}_store.dart`.
+
+### Sync merge rules
+
+- Per entity id (kinds: card, cardFolder, dictionary, dictionaryFolder) each
+  replica has one *record*: live (`updatedAt`, missing = 0) or dead
+  (`deletedAt`). An entity and a tombstone of the same id on one replica resolve
+  with "tombstone wins iff `deletedAt > updatedAt`".
+- live vs live: newer `updatedAt` wins; equal stamps with different content go
+  to the phone (counted in `SyncReport.conflictsResolved`).
+- live vs dead: dead wins iff `deletedAt > updatedAt`; on equal stamps the phone's
+  side wins (phone live: restored, phone dead: deleted).
+- A tombstone is only propagated to a replica that still holds the entity;
+  dead/dead and dead/absent change nothing (so tombstone sets may differ).
+- **Mirror mode** (`SyncOptions.mirrorDictionaries`, phone's value is sent in
+  the handshake; covers dictionaries and dictionary folders only): the watch
+  gets exactly the phone's state; watch-only or watch-edited dictionaries are
+  overwritten/removed; nothing flows watch -> phone for them.
+- **Orphan rule:** after the merge, an item or folder whose folder/parent is not
+  live moves to the root (field removed, `updatedAt` untouched, counted in
+  `orphansMovedToRoot`). A parent cycle (possible when two replicas move folders
+  into each other) is broken by moving the cycle member with the smallest id to
+  the root. Both replicas compute this on the same final content, so no extra
+  data is exchanged.
+- Apply order: item deletes, folder puts (parents first), item puts, folder
+  deletes (children first). Clocks are not reconciled (skew between phone and
+  watch affects which writer is "last").
+
+### Protocol
+
+`sync.hello`/`hello-ack` (version check, `kSyncMinProtocolVersion` ..
+`kSyncProtocolVersion`) -> manifest blobs both ways -> both sides compute the
+same plan -> bundle blobs (`CardFolderBundle` / `DictionaryFolderBundle` with
+`rootFolderId: ''`, i.e. "whole library") -> stage + SHA-256 verify + compare
+each item's hash with the manifest -> `sync.ready` (watch) -> `sync.commit`
+(phone) -> watch commits, `sync.done` -> phone commits. Blobs are
+content-addressed (`purpose:sha256`), offered by message, pulled by chunk-index
+ranges (`sync.want`), acknowledged with `sync.ack`; everything is retried every
+`retryInterval`. Unfinished blobs stay in the receiver's `SyncResumeCache`, so a
+retry after link loss only fetches the missing chunks. Nothing touches a store
+before commit; if a replica changed during the sync, it fails with `dataChanged`
+(safe to retry). If a commit throws, the engine rolls back best effort and
+reports `storeFailure`. Cross-device atomicity is "watch first, phone second":
+if the link dies between the two commits the watch has applied and the phone
+has not, and the next sync converges.
+
+### Requirements on the real stores (T7)
+
+- `putCardFromSync` / `putDictionaryFromSync` / `put*FolderFromSync` MUST also
+  remove a tombstone of the same id (rollback and resurrection rely on it).
+- `deleteFromSync` MUST remove only the one entity (no folder cascade) and
+  record exactly the tombstone it is given; it must tolerate a missing entity.
+- Reading must round-trip: `toJson()` of a stored-and-reloaded entity must be
+  byte-identical (the manifest hash is SHA-256 of `toJson()`).
+
+### Additive changes to frozen files
+
+None.

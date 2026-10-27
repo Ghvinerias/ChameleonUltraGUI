@@ -50,6 +50,8 @@ Map<SyncKey, String> normalizeOrphans(Map<SyncKey, String> finalJson) {
     for (final e in finalJson.entries) {
       final kind = e.key.$1;
       if (kind.isFolder || kind.folderKind != folderKind) continue;
+      // `toJson` only writes the field when set; skip decoding big bodies.
+      if (!e.value.contains('"folderId"')) continue;
       final m = jsonDecode(e.value) as Map<String, dynamic>;
       final f = m['folderId'] as String?;
       if (f != null && !parents.containsKey(f)) {

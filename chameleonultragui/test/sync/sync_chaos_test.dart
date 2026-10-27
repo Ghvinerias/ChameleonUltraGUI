@@ -73,7 +73,8 @@ void main() {
       for (final t in [pair.phoneTransport, pair.watchTransport]) {
         final heldOnce = <String>{};
         t.chunkHook = (c) {
-          if (c.index % 5 == 1 && heldOnce.add('${c.transferId.split('#').first}/${c.index}')) {
+          if (c.index % 5 == 1 &&
+              heldOnce.add('${c.transferId.split('#').first}/${c.index}')) {
             return ChunkFate.held;
           }
           if (c.index % 5 == 3) {
@@ -121,7 +122,9 @@ void main() {
         };
         t.messageHook = (m) => rnd.nextDouble() < 0.2
             ? ChunkFate.drop
-            : (rnd.nextDouble() < 0.2 ? ChunkFate.duplicate : ChunkFate.deliver);
+            : (rnd.nextDouble() < 0.2
+                  ? ChunkFate.duplicate
+                  : ChunkFate.deliver);
       }
       await pair.sync();
       expect(p.dump(), w.dump());
@@ -130,62 +133,70 @@ void main() {
   });
 
   group('interruption', () {
-    test('link loss mid-transfer, then a resumed sync fetches only the rest',
-        () async {
-      final (p, w) = await _populated();
-      final pair = SyncPair(phone: p, watch: w, chunkSize: 2048);
-      var cardChunks = 0;
-      var total = 0;
-      var cut = true;
-      pair.phoneTransport.chunkHook = (c) {
-        if (!c.transferId.startsWith('cards:')) return ChunkFate.deliver;
-        cardChunks++;
-        if (cut && cardChunks == 6) {
-          pair.phoneTransport.setPeerAvailable(false);
-          return ChunkFate.drop;
-        }
-        return ChunkFate.deliver;
-      };
-      final before = (p.dump(), w.dump());
-      await expectLater(
-        pair.sync(),
-        throwsA(
-          isA<SyncException>().having(
-            (e) => e.code,
-            'code',
-            SyncErrorCode.transportLost,
-          ),
-        ),
-      );
-      expect(p.dump(), before.$1);
-      expect(w.dump(), before.$2);
-      expect(pair.watchEngine.resumeCache.length, greaterThan(0));
-
-      // Link comes back; count the bundle chunks of the retry.
-      pair.phoneTransport.setPeerAvailable(true);
-      cut = false;
-      cardChunks = 0;
-      final seen = <int>{};
-      pair.phoneTransport.chunkHook = (c) {
-        if (c.transferId.startsWith('cards:')) {
+    test(
+      'link loss mid-transfer, then a resumed sync fetches only the rest',
+      () async {
+        final (p, w) = await _populated();
+        final pair = SyncPair(phone: p, watch: w, chunkSize: 2048);
+        var cardChunks = 0;
+        var total = 0;
+        var cut = true;
+        pair.phoneTransport.chunkHook = (c) {
+          if (!c.transferId.startsWith('cards:')) return ChunkFate.deliver;
           cardChunks++;
-          seen.add(c.index);
-        }
-        return ChunkFate.deliver;
-      };
-      await pair.sync();
-      expect(p.dump(), w.dump());
-      // Offer header total tells us the full chunk count.
-      total = ((pair.phoneTransport.sentMessages
-                  .where((m) => m.type == 'sync.offer' && m.payload['purpose'] == 'cards')
-                  .last
-                  .payload['totalBytes'] as int) /
-              2048)
-          .ceil();
-      expect(cardChunks, lessThan(total));
-      expect(cardChunks, total - 5); // the five delivered chunks were kept
-      await pair.dispose();
-    });
+          if (cut && cardChunks == 6) {
+            pair.phoneTransport.setPeerAvailable(false);
+            return ChunkFate.drop;
+          }
+          return ChunkFate.deliver;
+        };
+        final before = (p.dump(), w.dump());
+        await expectLater(
+          pair.sync(),
+          throwsA(
+            isA<SyncException>().having(
+              (e) => e.code,
+              'code',
+              SyncErrorCode.transportLost,
+            ),
+          ),
+        );
+        expect(p.dump(), before.$1);
+        expect(w.dump(), before.$2);
+        expect(pair.watchEngine.resumeCache.length, greaterThan(0));
+
+        // Link comes back; count the bundle chunks of the retry.
+        pair.phoneTransport.setPeerAvailable(true);
+        cut = false;
+        cardChunks = 0;
+        final seen = <int>{};
+        pair.phoneTransport.chunkHook = (c) {
+          if (c.transferId.startsWith('cards:')) {
+            cardChunks++;
+            seen.add(c.index);
+          }
+          return ChunkFate.deliver;
+        };
+        await pair.sync();
+        expect(p.dump(), w.dump());
+        // Offer header total tells us the full chunk count.
+        total =
+            ((pair.phoneTransport.sentMessages
+                            .where(
+                              (m) =>
+                                  m.type == 'sync.offer' &&
+                                  m.payload['purpose'] == 'cards',
+                            )
+                            .last
+                            .payload['totalBytes']
+                        as int) /
+                    2048)
+                .ceil();
+        expect(cardChunks, lessThan(total));
+        expect(cardChunks, total - 5); // the five delivered chunks were kept
+        await pair.dispose();
+      },
+    );
 
     test('cancelled mid-transfer leaves both stores untouched', () async {
       final (p, w) = await _populated();
@@ -288,40 +299,50 @@ void main() {
   });
 
   group('handshake', () {
-    test('protocol version mismatch fails both sides with a clear error',
-        () async {
-      final (p, w) = await _populated();
-      final pair = SyncPair(
-        phone: p,
-        watch: w,
-        watchProtocolVersion: kSyncProtocolVersion + 1,
-        watchMinProtocolVersion: kSyncProtocolVersion + 1,
-      );
-      final before = (p.dump(), w.dump());
-      final watchSession = pair.watchEngine.incomingSessions.first;
-      await expectLater(
-        pair.sync(),
-        throwsA(
-          isA<SyncException>()
-              .having((e) => e.code, 'code', SyncErrorCode.versionMismatch)
-              .having((e) => e.peerVersion, 'peerVersion', kSyncProtocolVersion + 1)
-              .having((e) => e.localVersion, 'localVersion', kSyncProtocolVersion),
-        ),
-      );
-      await expectLater(
-        (await watchSession).result,
-        throwsA(
-          isA<SyncException>().having(
-            (e) => e.code,
-            'code',
-            SyncErrorCode.versionMismatch,
+    test(
+      'protocol version mismatch fails both sides with a clear error',
+      () async {
+        final (p, w) = await _populated();
+        final pair = SyncPair(
+          phone: p,
+          watch: w,
+          watchProtocolVersion: kSyncProtocolVersion + 1,
+          watchMinProtocolVersion: kSyncProtocolVersion + 1,
+        );
+        final before = (p.dump(), w.dump());
+        final watchSession = pair.watchEngine.incomingSessions.first;
+        await expectLater(
+          pair.sync(),
+          throwsA(
+            isA<SyncException>()
+                .having((e) => e.code, 'code', SyncErrorCode.versionMismatch)
+                .having(
+                  (e) => e.peerVersion,
+                  'peerVersion',
+                  kSyncProtocolVersion + 1,
+                )
+                .having(
+                  (e) => e.localVersion,
+                  'localVersion',
+                  kSyncProtocolVersion,
+                ),
           ),
-        ),
-      );
-      expect(p.dump(), before.$1);
-      expect(w.dump(), before.$2);
-      await pair.dispose();
-    });
+        );
+        await expectLater(
+          (await watchSession).result,
+          throwsA(
+            isA<SyncException>().having(
+              (e) => e.code,
+              'code',
+              SyncErrorCode.versionMismatch,
+            ),
+          ),
+        );
+        expect(p.dump(), before.$1);
+        expect(w.dump(), before.$2);
+        await pair.dispose();
+      },
+    );
 
     test('a newer peer that still supports our version syncs fine', () async {
       final pair = SyncPair(
@@ -416,37 +437,39 @@ void main() {
       await pair.dispose();
     });
 
-    test('a local edit during the sync aborts it instead of clobbering',
-        () async {
-      final (p, w) = await _populated();
-      final pair = SyncPair(phone: p, watch: w, chunkSize: 2048);
-      var edited = false;
-      pair.phoneTransport.chunkHook = (c) {
-        if (!edited && c.transferId.startsWith('cards:')) {
-          edited = true;
-          w.cards.saveCard(
-            CardSave(uid: '01', name: 'late', tag: TagType.mifare1K),
-          );
-        }
-        return ChunkFate.deliver;
-      };
-      final phoneBefore = p.dump();
-      await expectLater(
-        pair.sync(),
-        throwsA(
-          isA<SyncException>().having(
-            (e) => e.code,
-            'code',
-            SyncErrorCode.dataChanged,
+    test(
+      'a local edit during the sync aborts it instead of clobbering',
+      () async {
+        final (p, w) = await _populated();
+        final pair = SyncPair(phone: p, watch: w, chunkSize: 2048);
+        var edited = false;
+        pair.phoneTransport.chunkHook = (c) {
+          if (!edited && c.transferId.startsWith('cards:')) {
+            edited = true;
+            w.cards.saveCard(
+              CardSave(uid: '01', name: 'late', tag: TagType.mifare1K),
+            );
+          }
+          return ChunkFate.deliver;
+        };
+        final phoneBefore = p.dump();
+        await expectLater(
+          pair.sync(),
+          throwsA(
+            isA<SyncException>().having(
+              (e) => e.code,
+              'code',
+              SyncErrorCode.dataChanged,
+            ),
           ),
-        ),
-      );
-      expect(p.dump(), phoneBefore);
-      expect(w.dump().length, 41); // 40 own + the late edit, nothing applied
-      pair.phoneTransport.chunkHook = null;
-      await pair.sync();
-      expect(p.dump(), w.dump());
-      await pair.dispose();
-    });
+        );
+        expect(p.dump(), phoneBefore);
+        expect(w.dump().length, 41); // 40 own + the late edit, nothing applied
+        pair.phoneTransport.chunkHook = null;
+        await pair.sync();
+        expect(p.dump(), w.dump());
+        await pair.dispose();
+      },
+    );
   });
 }

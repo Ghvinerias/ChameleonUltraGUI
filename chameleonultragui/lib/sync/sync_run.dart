@@ -183,9 +183,7 @@ class SyncRun implements SyncSession {
       if (role == SyncRole.phone) _sendHello();
     }
     if (now.difference(_lastRx) > options.idleTimeout) {
-      _fail(
-        const SyncException(SyncErrorCode.timeout, 'peer went silent'),
-      );
+      _fail(const SyncException(SyncErrorCode.timeout, 'peer went silent'));
       return;
     }
     if (!_helloDone) return;
@@ -358,10 +356,7 @@ class SyncRun implements SyncSession {
   }
 
   void _sendWant(InBlob b) {
-    _send(SyncMsg.want, {
-      'blobId': b.id,
-      'ranges': toRanges(b.missing()),
-    });
+    _send(SyncMsg.want, {'blobId': b.id, 'ranges': toRanges(b.missing())});
   }
 
   void _offerBlob(String purpose, Uint8List bytes) {
@@ -384,7 +379,8 @@ class SyncRun implements SyncSession {
         case SyncMsg.helloAck:
           _onHelloAck(p);
         case SyncMsg.error:
-          final code = SyncErrorCode.values.asNameMap()[p['code']] ??
+          final code =
+              SyncErrorCode.values.asNameMap()[p['code']] ??
               SyncErrorCode.protocol;
           _fail(
             SyncException(
@@ -415,7 +411,6 @@ class SyncRun implements SyncSession {
       _fail(SyncException(SyncErrorCode.protocol, 'bad ${m.type}: $e'));
     }
   }
-
 
   void _onHello(Map<String, dynamic> p) {
     if (role != SyncRole.watch) return;
@@ -501,7 +496,8 @@ class SyncRun implements SyncSession {
     blob.lastActivity = DateTime.now();
     _in[blobId] = blob;
     if (blob.verified) _onBlobVerified(blob);
-    if (_phase == SyncPhase.exchangingManifests && purpose != BlobPurpose.manifest) {
+    if (_phase == SyncPhase.exchangingManifests &&
+        purpose != BlobPurpose.manifest) {
       _emitPhase(SyncPhase.transferring);
     }
     _evaluate(blob);
@@ -739,7 +735,8 @@ class SyncRun implements SyncSession {
         ],
         cards: [
           for (final k in cardKeys)
-            if (k.$1 == SyncEntityKind.card) CardSave.fromJson(_local!.json[k]!),
+            if (k.$1 == SyncEntityKind.card)
+              CardSave.fromJson(_local!.json[k]!),
         ],
       );
       _offerBlob(
@@ -838,7 +835,9 @@ class SyncRun implements SyncSession {
 
     final finalJson = <SyncKey, String>{};
     for (final key in plan.finalLive) {
-      final json = own.puts.containsKey(key) ? received[key] : _local!.json[key];
+      final json = own.puts.containsKey(key)
+          ? received[key]
+          : _local!.json[key];
       if (json == null) {
         throw SyncException(SyncErrorCode.protocol, 'no content for $key');
       }
@@ -909,7 +908,9 @@ class SyncRun implements SyncSession {
   }
 
   void _onDone() {
-    if (role != SyncRole.phone || !_commitSent || _applying || _committed) return;
+    if (role != SyncRole.phone || !_commitSent || _applying || _committed) {
+      return;
+    }
     _applying = true;
     () async {
       try {
@@ -952,7 +953,10 @@ class SyncRun implements SyncSession {
       ? cards.deleteFromSync(t)
       : dictionaries.deleteFromSync(t);
 
-  Map<String, String?> _parents(Map<SyncKey, String> json, SyncEntityKind kind) {
+  Map<String, String?> _parents(
+    Map<SyncKey, String> json,
+    SyncEntityKind kind,
+  ) {
     final out = <String, String?>{};
     for (final e in json.entries) {
       if (e.key.$1 != kind) continue;
@@ -976,8 +980,7 @@ class SyncRun implements SyncSession {
       } else {
         final old = local.tombstones[key];
         await _deleteLocal(
-          old ??
-              SyncTombstone(id: key.$2, kind: key.$1, deletedAt: stamp - 1),
+          old ?? SyncTombstone(id: key.$2, kind: key.$1, deletedAt: stamp - 1),
         );
       }
     }

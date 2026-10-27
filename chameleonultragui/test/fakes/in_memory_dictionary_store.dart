@@ -38,11 +38,11 @@ class InMemoryDictionaryStore implements DictionaryStore {
   }
 
   @override
-  Future<List<Dictionary>> getDictionaries({int keyLength = 0}) async =>
-      _dicts.values
-          .map(Dictionary.fromJson)
-          .where((d) => keyLength == 0 || d.keyLength == keyLength)
-          .toList();
+  Future<List<Dictionary>> getDictionaries({int keyLength = 0}) async => _dicts
+      .values
+      .map(Dictionary.fromJson)
+      .where((d) => keyLength == 0 || d.keyLength == keyLength)
+      .toList();
 
   @override
   Future<Dictionary?> getDictionary(String id) async =>

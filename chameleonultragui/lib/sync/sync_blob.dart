@@ -30,11 +30,14 @@ class OutBlob {
     : sha256 = sha256Hex(bytes),
       id = '$purpose:${sha256Hex(bytes)}';
 
-  int get chunkCount => bytes.isEmpty ? 0 : (bytes.length + chunkSize - 1) ~/ chunkSize;
+  int get chunkCount =>
+      bytes.isEmpty ? 0 : (bytes.length + chunkSize - 1) ~/ chunkSize;
 
   Uint8List chunk(int index) {
     final start = index * chunkSize;
-    final end = start + chunkSize > bytes.length ? bytes.length : start + chunkSize;
+    final end = start + chunkSize > bytes.length
+        ? bytes.length
+        : start + chunkSize;
     return Uint8List.sublistView(bytes, start, end);
   }
 
@@ -63,7 +66,8 @@ class InBlob {
     required this.sha256,
   });
 
-  int get chunkCount => totalBytes == 0 ? 0 : (totalBytes + chunkSize - 1) ~/ chunkSize;
+  int get chunkCount =>
+      totalBytes == 0 ? 0 : (totalBytes + chunkSize - 1) ~/ chunkSize;
 
   int expectedLength(int index) {
     if (index < 0 || index >= chunkCount) return -1;
@@ -72,9 +76,8 @@ class InBlob {
     return end - start;
   }
 
-  int get receivedBytes => verified
-      ? totalBytes
-      : chunks.values.fold(0, (a, c) => a + c.length);
+  int get receivedBytes =>
+      verified ? totalBytes : chunks.values.fold(0, (a, c) => a + c.length);
 
   List<int> missing() => [
     for (var i = 0; i < chunkCount; i++)
@@ -85,7 +88,11 @@ class InBlob {
   Uint8List assemble() {
     final out = Uint8List(totalBytes);
     for (var i = 0; i < chunkCount; i++) {
-      out.setRange(i * chunkSize, i * chunkSize + chunks[i]!.length, chunks[i]!);
+      out.setRange(
+        i * chunkSize,
+        i * chunkSize + chunks[i]!.length,
+        chunks[i]!,
+      );
     }
     return out;
   }

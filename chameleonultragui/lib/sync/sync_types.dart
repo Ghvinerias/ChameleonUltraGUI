@@ -67,7 +67,11 @@ class SyncPhaseEvent extends SyncEvent {
 class SyncProgressEvent extends SyncEvent {
   final int bytesTransferred;
   final int bytesTotal;
-  const SyncProgressEvent(super.sessionId, this.bytesTransferred, this.bytesTotal);
+  const SyncProgressEvent(
+    super.sessionId,
+    this.bytesTransferred,
+    this.bytesTotal,
+  );
 
   double get fraction => bytesTotal == 0 ? 0 : bytesTransferred / bytesTotal;
 }

@@ -54,8 +54,7 @@ class SyncRecord {
   int get hashCode => Object.hash(kind, id, live, stamp, hash, size);
 
   @override
-  String toString() =>
-      'SyncRecord($kind $id ${live ? 'live' : 'dead'}@$stamp)';
+  String toString() => 'SyncRecord($kind $id ${live ? 'live' : 'dead'}@$stamp)';
 }
 
 /// Resolves a manifest into one record per entity. When an entity and a
@@ -63,9 +62,7 @@ class SyncRecord {
 Map<SyncKey, SyncRecord> resolveRecords(SyncManifest manifest) {
   final result = <SyncKey, SyncRecord>{};
   for (final e in manifest.entries) {
-    if (e.kind.isDictionaryFamily &&
-        !e.kind.isFolder &&
-        e.id.isEmpty) {
+    if (e.kind.isDictionaryFamily && !e.kind.isFolder && e.id.isEmpty) {
       continue;
     }
     final existing = result[(e.kind, e.id)];
@@ -146,7 +143,10 @@ class SyncSnapshot {
     }
 
     final tombstones = <SyncKey, SyncTombstone>{};
-    void addTombstones(List<SyncTombstone> list, bool Function(SyncEntityKind) ok) {
+    void addTombstones(
+      List<SyncTombstone> list,
+      bool Function(SyncEntityKind) ok,
+    ) {
       for (final t in list) {
         if (!ok(t.kind)) continue;
         if (t.kind == SyncEntityKind.dictionary && t.id.isEmpty) continue;

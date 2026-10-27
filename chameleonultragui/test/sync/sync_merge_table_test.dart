@@ -115,9 +115,11 @@ void main() {
       await pair.watch.dict('only-watch', 9);
       final r = await pair.sync(mirror: true);
       expect(_nameOf(pair.phone, SyncEntityKind.card), isNull); // id 'x' only
-      final cardName = (jsonDecode(pair.phone.dump()['card/c']!) as Map)['name'];
+      final cardName =
+          (jsonDecode(pair.phone.dump()['card/c']!) as Map)['name'];
       expect(cardName, 'W'); // normal LWW for cards
-      final dictName = (jsonDecode(pair.watch.dump()['dict/d']!) as Map)['name'];
+      final dictName =
+          (jsonDecode(pair.watch.dump()['dict/d']!) as Map)['name'];
       expect(dictName, 'P');
       expect(pair.watch.dump().containsKey('dict/only-watch'), isFalse);
       expect(r.watch.of(SyncEntityKind.dictionary).deleted, 1);
@@ -127,7 +129,9 @@ void main() {
     });
 
     test('the mirror flag is taken from the phone, not the watch', () async {
-      final pair = SyncPair(options: fastOptions.copyWith(mirrorDictionaries: false));
+      final pair = SyncPair(
+        options: fastOptions.copyWith(mirrorDictionaries: false),
+      );
       await pair.watch.dict('w', 5);
       await pair.sync(mirror: true);
       expect(pair.watch.dump().containsKey('dict/w'), isFalse);
@@ -153,16 +157,18 @@ void main() {
       expect(plan.conflicts, 0);
     });
 
-    test('equal stamp with different content is a conflict won by the phone',
-        () {
-      final plan = computeSyncPlan(
-        phone: {(SyncEntityKind.card, 'a'): live('a', 5, 'p')},
-        watch: {(SyncEntityKind.card, 'a'): live('a', 5, 'w')},
-      );
-      expect(plan.watch.puts.keys, [(SyncEntityKind.card, 'a')]);
-      expect(plan.phone.puts, isEmpty);
-      expect(plan.conflicts, 1);
-    });
+    test(
+      'equal stamp with different content is a conflict won by the phone',
+      () {
+        final plan = computeSyncPlan(
+          phone: {(SyncEntityKind.card, 'a'): live('a', 5, 'p')},
+          watch: {(SyncEntityKind.card, 'a'): live('a', 5, 'w')},
+        );
+        expect(plan.watch.puts.keys, [(SyncEntityKind.card, 'a')]);
+        expect(plan.phone.puts, isEmpty);
+        expect(plan.conflicts, 1);
+      },
+    );
 
     test('resolveRecords: tombstone beats entity only when strictly newer', () {
       final m = SyncManifest(

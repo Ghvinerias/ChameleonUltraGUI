@@ -22,8 +22,9 @@ const fastOptions = SyncOptions(
 class Replica {
   int now = 1000;
   late final InMemoryCardStore cards = InMemoryCardStore(clock: () => now);
-  late final InMemoryDictionaryStore dicts =
-      InMemoryDictionaryStore(clock: () => now);
+  late final InMemoryDictionaryStore dicts = InMemoryDictionaryStore(
+    clock: () => now,
+  );
 
   // --- exact-stamp seeding (bypasses the local stamping rules) ---
   Future<void> card(String id, int stamp, {String? folder, String name = ''}) =>
@@ -35,7 +36,9 @@ class Replica {
           tag: TagType.mifare1K,
           folderId: folder,
           updatedAt: stamp == 0 ? null : stamp,
-          data: [Uint8List.fromList([1, 2, 3, 4])],
+          data: [
+            Uint8List.fromList([1, 2, 3, 4]),
+          ],
         ),
       );
 
