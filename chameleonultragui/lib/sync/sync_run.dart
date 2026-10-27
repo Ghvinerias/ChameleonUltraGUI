@@ -218,7 +218,11 @@ class SyncRun implements SyncSession {
     if (_finished) return;
     _finished = true;
     if (notifyPeer) {
-      _sendRaw(SyncMsg.error, {'code': e.code.name, 'message': e.message});
+      _sendRaw(SyncMsg.error, {
+        'code': e.code.name,
+        'message': e.message,
+        if (e.localVersion != null) 'version': e.localVersion,
+      });
     }
     _teardown();
     final event = SyncFailedEvent(id, e);
@@ -388,7 +392,7 @@ class SyncRun implements SyncSession {
               (p['message'] ?? 'peer reported $code') as String,
               fromPeer: true,
               localVersion: handshake.protocolVersion,
-              peerVersion: p['peerVersion'] as int?,
+              peerVersion: p['version'] as int?,
             ),
             notifyPeer: false,
           );
