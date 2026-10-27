@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:chameleonultragui/core/stores/prefs_card_store.dart';
+import 'package:chameleonultragui/core/stores/prefs_dictionary_store.dart';
 import 'package:chameleonultragui/helpers/colors.dart' as colors;
 import 'package:chameleonultragui/models/card_folder.dart';
 import 'package:chameleonultragui/models/card_save.dart';
@@ -27,7 +29,18 @@ class SharedPreferencesProvider extends ChangeNotifier {
 
   Future<void> load() async {
     _sharedPreferences = await SharedPreferences.getInstance();
+    _cardStore = PrefsCardStore(_sharedPreferences)..pruneExpired();
+    _dictionaryStore = PrefsDictionaryStore(_sharedPreferences)
+      ..pruneExpired();
   }
+
+  late PrefsCardStore _cardStore;
+  late PrefsDictionaryStore _dictionaryStore;
+
+  /// Stores own all stamping/tombstoning of cards, dictionaries and folders;
+  /// the legacy get/set methods below delegate to them.
+  PrefsCardStore get cardStore => _cardStore;
+  PrefsDictionaryStore get dictionaryStore => _dictionaryStore;
 
   ThemeMode getTheme() {
     final themeValue = _sharedPreferences.getInt('app_theme') ?? 0;
@@ -95,69 +108,28 @@ class SharedPreferencesProvider extends ChangeNotifier {
     _sharedPreferences.setBool('emulate_device', value);
   }
 
-  List<Dictionary> getDictionaries({int keyLength = 0}) {
-    List<Dictionary> output = [];
-    final data = _sharedPreferences.getStringList('dictionaries') ?? [];
-    for (var dictionary in data) {
-      Dictionary dict = Dictionary.fromJson(dictionary);
-      if (keyLength == 0 || dict.keyLength == keyLength) {
-        output.add(dict);
-      }
-    }
-    return output;
-  }
+  List<Dictionary> getDictionaries({int keyLength = 0}) =>
+      _dictionaryStore.getDictionariesSync(keyLength: keyLength);
 
-  void setDictionaries(List<Dictionary> dictionaries) {
-    List<String> output = [];
-    for (var dictionary in dictionaries) {
-      if (dictionary.id != "") {
-        // system empty dictionary, never save it
-        output.add(dictionary.toJson());
-      }
-    }
-    _sharedPreferences.setStringList('dictionaries', output);
-  }
+  /// Bulk replace; diffed by the store (stamps changed items, tombstones
+  /// removed ones). The system empty dictionary (id "") is never saved.
+  void setDictionaries(List<Dictionary> dictionaries) =>
+      _dictionaryStore.replaceDictionaries(dictionaries);
 
-  List<DictionaryFolder> getDictionaryFolders() {
-    final data = _sharedPreferences.getStringList('dictionary_folders') ?? [];
-    return data.map(DictionaryFolder.fromJson).toList();
-  }
+  List<DictionaryFolder> getDictionaryFolders() =>
+      _dictionaryStore.getFoldersSync();
 
-  void setDictionaryFolders(List<DictionaryFolder> folders) {
-    _sharedPreferences.setStringList(
-      'dictionary_folders',
-      folders.map((folder) => folder.toJson()).toList(),
-    );
-  }
+  void setDictionaryFolders(List<DictionaryFolder> folders) =>
+      _dictionaryStore.replaceFolders(folders);
 
-  List<CardSave> getCards() {
-    List<CardSave> output = [];
-    final data = _sharedPreferences.getStringList('cards') ?? [];
-    for (var tag in data) {
-      output.add(CardSave.fromJson(tag));
-    }
-    return output;
-  }
+  List<CardSave> getCards() => _cardStore.getCardsSync();
 
-  void setCards(List<CardSave> cards) {
-    List<String> output = [];
-    for (var card in cards) {
-      output.add(card.toJson());
-    }
-    _sharedPreferences.setStringList('cards', output);
-  }
+  void setCards(List<CardSave> cards) => _cardStore.replaceCards(cards);
 
-  List<CardFolder> getCardFolders() {
-    final data = _sharedPreferences.getStringList('card_folders') ?? [];
-    return data.map(CardFolder.fromJson).toList();
-  }
+  List<CardFolder> getCardFolders() => _cardStore.getFoldersSync();
 
-  void setCardFolders(List<CardFolder> folders) {
-    _sharedPreferences.setStringList(
-      'card_folders',
-      folders.map((folder) => folder.toJson()).toList(),
-    );
-  }
+  void setCardFolders(List<CardFolder> folders) =>
+      _cardStore.replaceFolders(folders);
 
   void setLocale(Locale loc) {
     for (var locale in AppLocalizations.supportedLocales) {
