@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPIKE ONLY: lets the watch POST its diagnostic report to the dev machine on the LAN.
+     Everything else stays HTTPS-only. Remove this file (and the manifest attribute) when
+     the spike screens are removed. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.10.10.24</domain>
+    </domain-config>
+</network-security-config>

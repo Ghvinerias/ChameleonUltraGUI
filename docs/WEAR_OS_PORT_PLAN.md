@@ -15,8 +15,8 @@ Items marked **[verify]** are assumptions or unverified claims from research. A 
 | D2 | Build split | Gradle flavors `phone` / `wear`, same `applicationId` (`io.chameleon.ultra`). Fallback if flavors disrupt the existing release pipeline: a separate Gradle property plus a manifest overlay. |
 | D3 | Signing | Commit a dev-only keystore for debug and CI builds, so phone and watch builds always share a key. Release builds keep the real keystore secret. |
 | D4 | Sync semantics | Last-writer-wins per item id, with tombstones for deletes. Dictionaries have a "mirror phone to watch" switch. |
-| D5 | Hardnested on the watch | Decide after the Stage 0 timing spike. Default is gated or phone-only. |
-| D6 | Watch storage | Keep SharedPreferences for the MVP. Move to file-backed stores only if the Stage 0 spike shows slow startup. |
+| D5 | Hardnested on the watch | **Resolved: phone-only.** It crashed the app on the watch in the spike (about 1.2 GB needed vs about 605 MB available); see `docs/wear-spike-results.md`. |
+| D6 | Watch storage | **Resolved: keep SharedPreferences.** A 5 MB value reloads in 85 ms on the watch. |
 
 D3 matters more than it looks. `android/app/build.gradle` currently signs release builds with the **debug** key when no `key.properties` exists. CI runners generate a fresh debug keystore, so APKs from different CI jobs have different signatures. Phone and watch must share package name and signature for the Wear Data Layer to connect them. Without a shared key, sync fails and in-place upgrade installs fail with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
 
