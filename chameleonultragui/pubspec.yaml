@@ -56,6 +56,8 @@ dependencies:
   archive: ^4.2.0
   adb_wifi:
     path: packages/adb_wifi
+  wear_sync:
+    path: packages/wear_sync
   flutter_reactive_ble: ^5.5.0
   # 13.x requires SDK 37; keep SDK 36 until usb_serial supports Gradle 9.
   permission_handler: ^12.0.3
