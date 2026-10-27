@@ -261,8 +261,18 @@ Future<bool> mfUltralightIsUlc(ChameleonCommunicator communicator) async {
   }
 }
 
-Future<(TagType, MifareUltralightInfo)> performMifareUltralightScan(
-    ChameleonCommunicator communicator, MifareUltralightInfo mfuInfo,
+/// Headless result of probing a Mifare Ultralight / NTAG card. [version] and
+/// [signature] are only set when the card answered GET_VERSION with 8 bytes.
+class MifareUltralightIdentity {
+  final TagType type;
+  final Uint8List? version;
+  final Uint8List? signature;
+
+  const MifareUltralightIdentity(this.type, {this.version, this.signature});
+}
+
+Future<MifareUltralightIdentity> mfUltralightIdentify(
+    ChameleonCommunicator communicator,
     {TagType? override}) async {
   TagType type = override ?? TagType.unknown;
   Uint8List version = await mfUltralightGetVersion(communicator);
@@ -281,10 +291,22 @@ Future<(TagType, MifareUltralightInfo)> performMifareUltralightScan(
 
   if (version.length == 8) {
     Uint8List signature = await mfUltralightGetSignature(communicator);
-
-    mfuInfo.version = version;
-    mfuInfo.signature = signature;
+    return MifareUltralightIdentity(type,
+        version: version, signature: signature);
   }
 
-  return (type, mfuInfo);
+  return MifareUltralightIdentity(type);
+}
+
+Future<(TagType, MifareUltralightInfo)> performMifareUltralightScan(
+    ChameleonCommunicator communicator, MifareUltralightInfo mfuInfo,
+    {TagType? override}) async {
+  final identity = await mfUltralightIdentify(communicator, override: override);
+
+  if (identity.version != null) {
+    mfuInfo.version = identity.version;
+    mfuInfo.signature = identity.signature;
+  }
+
+  return (identity.type, mfuInfo);
 }

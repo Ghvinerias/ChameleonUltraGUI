@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:chameleonultragui/connector/serial_abstract.dart';
+import 'package:chameleonultragui/core/read/read_service.dart';
+import 'package:chameleonultragui/core/read/read_service_impl.dart';
 import 'package:chameleonultragui/gui/page/read_card.dart';
 import 'package:chameleonultragui/helpers/definitions.dart';
 import 'package:chameleonultragui/helpers/mifare_classic/general.dart';
-import 'package:chameleonultragui/helpers/mifare_ultralight/general.dart';
+import 'package:chameleonultragui/helpers/mifare_classic/recovery.dart';
 import 'package:chameleonultragui/main.dart';
 import 'package:chameleonultragui/sharedprefsprovider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -602,54 +604,93 @@ bool isEM410X(TagType type) {
   ].contains(type);
 }
 
-Future<(HFCardInfo, MifareClassicInfo, MifareUltralightInfo)> readHFInfo(
-    BuildContext context, dynamic updateMifareClassicRecovery) async {
-  var appState = Provider.of<ChameleonGUIState>(context, listen: false);
-  var localizations = AppLocalizations.of(context)!;
+/// Headless read service bound to the connected device (phone settings).
+ReadServiceImpl phoneReadService(ChameleonGUIState appState) {
+  return ReadServiceImpl(
+      communicator: appState.communicator!,
+      log: appState.log,
+      keyChunkSize:
+          appState.connector!.connectionType == ConnectionType.ble ? 32 : 64);
+}
 
+/// Maps a finished HF read to the phone's info objects, with the same strings
+/// and defaults the page always used.
+(HFCardInfo, MifareClassicInfo, MifareUltralightInfo) hfInfoFromResult(
+    HfReadResult result,
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+    void Function() updateMifareClassicRecovery) {
   HFCardInfo hfInfo = HFCardInfo();
   MifareClassicInfo mfcInfo = MifareClassicInfo();
   MifareUltralightInfo mfuInfo = MifareUltralightInfo();
 
-  if (!await appState.communicator!.isReaderDeviceMode()) {
-    await appState.communicator!.setReaderDeviceMode(true);
-  }
-
-  CardData? card = await appState.communicator!.scan14443aTag();
-
+  final card = result.card;
   if (card == null) {
     hfInfo.cardExist = false;
     return (hfInfo, mfcInfo, mfuInfo);
   }
 
-  try {
-    TagType type = TagType.unknown;
+  final mfc = result.mifareClassic;
+  final mfu = result.mifareUltralight;
 
-    if (!await appState.communicator!.detectMf1Support()) {
-      (type, mfuInfo) =
-          await performMifareUltralightScan(appState.communicator!, mfuInfo);
-    } else {
-      if (context.mounted) {
-        (type, mfcInfo) = await performMifareClassicScan(appState.communicator!,
-            mfcInfo, context, updateMifareClassicRecovery);
-      }
-    }
-
-    hfInfo.uid = bytesToHexSpace(card.uid);
-    hfInfo.sak = card.sak.toRadixString(16).padLeft(2, '0').toUpperCase();
-    hfInfo.atqa = bytesToHexSpace(card.atqa);
-    hfInfo.ats =
-        (card.ats.isNotEmpty) ? bytesToHexSpace(card.ats) : localizations.no;
-    hfInfo.type = type;
-    mfcInfo.state = (mfcInfo.type != MifareClassicType.none)
-        ? MifareClassicState.checkKeys
-        : MifareClassicState.none;
-    hfInfo.tech = chameleonTagToString(type, localizations) +
-        (mfcInfo.isEV1 ? " EV1" : "");
-  } catch (e) {
-    appState.log!.e(e.toString());
-    hfInfo.cardExist = false;
+  if (mfu != null) {
+    mfuInfo.version = mfu.version;
+    mfuInfo.signature = mfu.signature;
+  } else if (mfc != null) {
+    mfcInfo.recovery = MifareClassicRecovery(
+        update: updateMifareClassicRecovery,
+        appState: appState,
+        mifareClassicType: mfc.type,
+        localizations: localizations,
+        isMifareClassicEV1: mfc.isEV1);
+    mfcInfo.ntLevel = mfc.ntLevel;
+    mfcInfo.hasBackdoor = mfc.hasBackdoor;
+    mfcInfo.isEV1 = mfc.isEV1;
+    mfcInfo.type = mfc.type;
   }
 
+  hfInfo.uid = bytesToHexSpace(card.uid);
+  hfInfo.sak = card.sak.toRadixString(16).padLeft(2, '0').toUpperCase();
+  hfInfo.atqa = bytesToHexSpace(card.atqa);
+  hfInfo.ats =
+      (card.ats.isNotEmpty) ? bytesToHexSpace(card.ats) : localizations.no;
+  hfInfo.type = result.type;
+  mfcInfo.state = (mfcInfo.type != MifareClassicType.none)
+      ? MifareClassicState.checkKeys
+      : MifareClassicState.none;
+  hfInfo.tech = chameleonTagToString(result.type, localizations) +
+      (mfcInfo.isEV1 ? " EV1" : "");
+
   return (hfInfo, mfcInfo, mfuInfo);
+}
+
+/// Like [hfInfoFromResult] for a session's terminal event. A card that
+/// vanished mid-read is reported as "no card", anything else rethrows.
+(HFCardInfo, MifareClassicInfo, MifareUltralightInfo) hfInfoFromTerminal(
+    ReadEvent terminal,
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+    void Function() updateMifareClassicRecovery) {
+  if (terminal is ReadDone && terminal.result is HfReadResult) {
+    return hfInfoFromResult(terminal.result as HfReadResult, appState,
+        localizations, updateMifareClassicRecovery);
+  }
+
+  if (terminal is ReadFailed && terminal.code != ReadErrorCode.cardLost) {
+    throw ReadFailedException(terminal.code, terminal.detail);
+  }
+
+  return hfInfoFromResult(
+      const HfReadResult(), appState, localizations, updateMifareClassicRecovery);
+}
+
+Future<(HFCardInfo, MifareClassicInfo, MifareUltralightInfo)> readHFInfo(
+    BuildContext context, dynamic updateMifareClassicRecovery) async {
+  var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+  var localizations = AppLocalizations.of(context)!;
+
+  final terminal = await phoneReadService(appState).readHf().terminal;
+
+  return hfInfoFromTerminal(
+      terminal, appState, localizations, updateMifareClassicRecovery);
 }

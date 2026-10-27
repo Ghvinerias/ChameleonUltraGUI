@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:math' show min;
 
 import 'package:chameleonultragui/bridge/chameleon.dart';
+import 'package:chameleonultragui/core/read/mifare_classic_engine.dart';
 import 'package:chameleonultragui/generated/i18n/app_localizations.dart';
 import 'package:chameleonultragui/gui/page/read_card.dart';
 import 'package:chameleonultragui/helpers/definitions.dart';
@@ -612,37 +613,21 @@ Future<(TagType, MifareClassicInfo)> performMifareClassicScan(
     {TagType? override}) async {
   var appState = Provider.of<ChameleonGUIState>(context, listen: false);
   var localizations = AppLocalizations.of(context)!;
-  MifareClassicType mifareClassicType;
 
-  if (override != null) {
-    mifareClassicType = chameleonTagTypeGetMfClassicType(override);
-  } else {
-    mifareClassicType = await mfClassicGetType(communicator);
-  }
-
-  NTLevel ntLevel = NTLevel.unknown;
-
-  bool isMifareClassicEV1 =
-      await communicator.mf1Auth(0x45, 0x61, gMifareClassicKeys[3]);
+  final identity = await identifyMifareClassic(communicator, override: override);
 
   MifareClassicRecovery recovery = MifareClassicRecovery(
       update: updateMifareClassicRecovery,
       appState: appState,
-      mifareClassicType: mifareClassicType,
+      mifareClassicType: identity.type,
       localizations: localizations,
-      isMifareClassicEV1: isMifareClassicEV1);
-
-  try {
-    ntLevel = await communicator.getMf1NTLevel();
-  } catch (_) {}
-
-  bool hasBackdoor = await mfClassicHasBackdoor(communicator);
+      isMifareClassicEV1: identity.isEV1);
 
   mfcInfo.recovery = recovery;
-  mfcInfo.ntLevel = ntLevel;
-  mfcInfo.hasBackdoor = hasBackdoor;
-  mfcInfo.isEV1 = isMifareClassicEV1;
-  mfcInfo.type = mifareClassicType;
+  mfcInfo.ntLevel = identity.ntLevel;
+  mfcInfo.hasBackdoor = identity.hasBackdoor;
+  mfcInfo.isEV1 = identity.isEV1;
+  mfcInfo.type = identity.type;
 
-  return (mfClassicGetChameleonTagType(mifareClassicType), mfcInfo);
+  return (mfClassicGetChameleonTagType(identity.type), mfcInfo);
 }
