@@ -32,7 +32,9 @@ class InstallWizardController extends ChangeNotifier {
   final WatchInstaller installer;
   final ApkFetcher fetcher;
   String apkUrl;
-  final String packageName;
+  /// Application id on the watch. The UI replaces it with the phone app's own id at
+  /// runtime, because dev builds use an `.dev` suffix on phone and watch alike.
+  String packageName;
 
   WizardStep _step = WizardStep.checklist;
   bool _busy = false;

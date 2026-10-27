@@ -11,6 +11,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// True only when a real release keystore is configured (upload-keystore.jks + key.properties).
+def hasReleaseKey = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']).exists() : false
+
 android {
     namespace = "io.chameleon.ultra"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +34,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "CU GUI"
     }
 
     signingConfigs {
@@ -62,14 +66,24 @@ android {
     }
 
     buildTypes {
+        // Debug builds and release builds without the real keystore are signed with the
+        // committed dev key, which can never replace the store app (different signature).
+        // Give them their own application id so they install side by side with the store
+        // app and keep separate data. Phone and watch share the id (Wear Data Layer).
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "CU GUI Dev"
+        }
         release {
-            if (keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']).exists() : false) {
+            if (hasReleaseKey) {
                 println "Info: upload-keystore.jks found. Signing for release."
                 signingConfig = signingConfigs.release
             }
             else {
-                println "Warning: upload-keystore.jks not found. Signing for debug."
+                println "Warning: upload-keystore.jks not found. Signing with dev key as io.chameleon.ultra.dev."
                 signingConfig = signingConfigs.debug
+                applicationIdSuffix = ".dev"
+                manifestPlaceholders["appLabel"] = "CU GUI Dev"
             }
         }
     }

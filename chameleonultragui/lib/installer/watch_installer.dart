@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:adb_wifi/adb_wifi.dart';
 
-/// Application id of the watch build (same as the phone, see Wear OS plan D2).
+/// Application id of the store/release watch build (same as the phone, see Wear OS plan D2).
+/// Dev builds append `.dev`; the wizard resolves the real id from the running app.
 const String watchPackageName = 'io.chameleon.ultra';
 
 /// Default location of the CI-built watch APK bundle.

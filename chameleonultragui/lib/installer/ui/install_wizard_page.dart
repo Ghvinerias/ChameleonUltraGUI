@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../apk_source.dart';
 import '../install_wizard.dart';
@@ -34,6 +35,20 @@ class _InstallWizardPageState extends State<InstallWizardPage> {
   void initState() {
     super.initState();
     c.addListener(_onChange);
+    _resolvePackageName();
+  }
+
+  /// The watch app has the same application id as this app (dev builds carry a
+  /// `.dev` suffix), so use our own id instead of the store id.
+  Future<void> _resolvePackageName() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted && info.packageName.isNotEmpty) {
+        c.packageName = info.packageName;
+      }
+    } catch (_) {
+      // Keep the default (store id), e.g. in widget tests without the plugin.
+    }
   }
 
   void _onChange() {
