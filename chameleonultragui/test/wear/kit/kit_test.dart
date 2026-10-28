@@ -66,15 +66,21 @@ void main() {
     });
   }
 
-  testWidgets('placeholder opens for non-diagnostic entries', (tester) async {
-    await pumpWear(tester, const WearApp());
+  // Features register their own screens, so use an app without registrations
+  // to exercise the "coming soon" placeholder itself.
+  testWidgets('placeholder opens for unregistered entries', (tester) async {
+    await pumpWear(tester, const WearApp(registerDestinations: false));
     await tester.tap(find.text('Read'));
     await tester.pumpAndSettle();
     expect(find.text('Coming soon'), findsOneWidget);
   });
 
   testWidgets('placeholder fits at scale 1.3', (tester) async {
-    await pumpWear(tester, const WearApp(), textScale: 1.3);
+    await pumpWear(
+      tester,
+      const WearApp(registerDestinations: false),
+      textScale: 1.3,
+    );
     await tester.tap(find.text('Read'));
     await tester.pumpAndSettle();
     expect(find.text('Coming soon'), findsOneWidget);
