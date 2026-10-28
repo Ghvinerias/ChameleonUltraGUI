@@ -5,6 +5,7 @@ import 'package:chameleonultragui/gui/menu/dialogs/qr/settings.dart';
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:chameleonultragui/helpers/github.dart';
 import 'package:chameleonultragui/installer/ui/install_on_watch_tile.dart';
+import 'package:chameleonultragui/sync/ui/watch_sync_tile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -664,6 +665,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               if (appState.devMode && Platform.isAndroid) ...[
                 const SizedBox(height: 10),
                 const InstallOnWatchTile(),
+                const WatchSyncTile(),
               ],
             ],
           ),
