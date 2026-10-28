@@ -40,8 +40,27 @@ class WearDictionarySelection {
     final all = await services.dictionaryStore.getDictionaries(
       keyLength: keyLength,
     );
-    final ids = await selectedIds();
+    return resolve(all, await selectedIds());
+  }
+
+  /// Pure selection rule: null [ids] = all, otherwise the existing
+  /// dictionaries whose id is in [ids] (stale ids are ignored).
+  static List<Dictionary> resolve(List<Dictionary> all, Set<String>? ids) {
     if (ids == null) return all;
     return all.where((d) => ids.contains(d.id)).toList();
+  }
+
+  /// Switches one dictionary on or off. The first call with a null selection
+  /// materialises the explicit set from [all] (every current dictionary).
+  /// Returns the new selection.
+  static Future<Set<String>> setUsed(
+    String id,
+    bool used, {
+    required Iterable<Dictionary> all,
+  }) async {
+    final ids = {...(await selectedIds() ?? all.map((d) => d.id))};
+    used ? ids.add(id) : ids.remove(id);
+    await setSelectedIds(ids);
+    return ids;
   }
 }
