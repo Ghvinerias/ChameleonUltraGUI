@@ -1,8 +1,10 @@
-import 'package:chameleonultragui/wear/navigation/wear_destinations.dart';
+import 'package:chameleonultragui/wear/features/slots/slots_overview_page.dart';
+import 'package:chameleonultragui/wear/services/connection_gate.dart';
 import 'package:flutter/widgets.dart';
 
-/// Entry point of the "Slots" destination. The track that owns this
-/// folder replaces the body with the real screen; everything else about the
-/// feature lives in this folder.
-Widget slotsEntry(BuildContext context) =>
-    const ComingSoonPage(id: WearDestinationId.slots);
+/// Entry point of the "Slots" destination: the 8-slot overview, behind the
+/// connection gate.
+Widget slotsEntry(BuildContext context) => WearConnectionGate(
+  builder: (context, device) =>
+      SlotsOverviewPage(key: ValueKey(device), device: device),
+);
