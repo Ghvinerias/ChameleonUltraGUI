@@ -103,6 +103,41 @@ class PrefsCollection<T> {
 
   List<T> list() => _raw().map(fromJson).toList();
 
+  /// Like [list] but skips entries that cannot be decoded, so the legacy
+  /// bulk setters (which only ever overwrote storage) keep working when one
+  /// stored entry is unreadable.
+  List<T> _listLenient() {
+    final out = <T>[];
+    for (final raw in _raw()) {
+      try {
+        out.add(fromJson(raw));
+      } catch (_) {
+        // unreadable entry: treated as absent and dropped on the next write
+      }
+    }
+    return out;
+  }
+
+  /// Stamp for a modification of an entity whose previous stamp (or deletion
+  /// time) was [previous]. Strictly greater than [previous], so two edits in
+  /// the same millisecond, or an edit after the clock moved backwards, still
+  /// order correctly for last-writer-wins sync.
+  int _nextStamp(int? previous) {
+    final now = clock();
+    final floor = (previous ?? 0) + 1;
+    return now > floor ? now : floor;
+  }
+
+  int? _tombstoneAt(String id) {
+    int? at;
+    for (final t in tombstones.all()) {
+      if (t.kind == kind && t.id == id && (at == null || t.deletedAt > at)) {
+        at = t.deletedAt;
+      }
+    }
+    return at;
+  }
+
   T? find(String id) {
     for (final item in list()) {
       if (idOf(item) == id) return item;
@@ -118,6 +153,9 @@ class PrefsCollection<T> {
     emit(StoreChange(kind: kind, id: id, type: type, origin: origin));
   }
 
+  static int? _maxOf(int? a, int? b) =>
+      a == null ? b : (b == null ? a : (a > b ? a : b));
+
   String _withoutStamp(T item) {
     final map = jsonDecode(toJson(item)) as Map<String, dynamic>;
     map.remove('updatedAt');
@@ -130,7 +168,10 @@ class PrefsCollection<T> {
     final items = list();
     final id = idOf(item);
     final i = items.indexWhere((x) => idOf(x) == id);
-    setUpdatedAt(item, clock());
+    final previous = i >= 0
+        ? updatedAtOf(items[i])
+        : _tombstoneAt(id);
+    setUpdatedAt(item, _nextStamp(_maxOf(previous, updatedAtOf(item))));
     if (i >= 0) {
       items[i] = item;
     } else {
@@ -148,10 +189,9 @@ class PrefsCollection<T> {
   /// the stamp of unchanged ones and recording a tombstone per removed item.
   /// [skip] filters items that must never be persisted.
   void replaceAll(List<T> next, {bool Function(T)? skip}) {
-    final current = {for (final x in list()) idOf(x): x};
+    final current = {for (final x in _listLenient()) idOf(x): x};
     final kept = <T>[];
     final changes = <StoreChange>[];
-    final now = clock();
     final nextIds = <String>{};
     for (final item in next) {
       if (skip != null && skip(item)) continue;
@@ -159,12 +199,14 @@ class PrefsCollection<T> {
       nextIds.add(id);
       final old = current[id];
       if (old == null) {
-        setUpdatedAt(item, now);
+        // Re-creating a deleted entity must outrank its tombstone.
+        setUpdatedAt(
+            item, _nextStamp(_maxOf(_tombstoneAt(id), updatedAtOf(item))));
         tombstones.clear(kind, id);
         changes.add(StoreChange(
             kind: kind, id: id, type: StoreChangeType.created));
       } else if (_withoutStamp(old) != _withoutStamp(item)) {
-        setUpdatedAt(item, now);
+        setUpdatedAt(item, _nextStamp(updatedAtOf(old)));
         changes.add(StoreChange(
             kind: kind, id: id, type: StoreChangeType.updated));
       } else {
@@ -172,11 +214,15 @@ class PrefsCollection<T> {
       }
       kept.add(item);
     }
-    for (final id in current.keys) {
-      if (!nextIds.contains(id)) {
-        tombstones.record(SyncTombstone(id: id, kind: kind, deletedAt: now));
+    for (final entry in current.entries) {
+      if (!nextIds.contains(entry.key)) {
+        // A tombstone must not be older than the entity it deletes.
+        tombstones.record(SyncTombstone(
+            id: entry.key,
+            kind: kind,
+            deletedAt: _nextStamp(updatedAtOf(entry.value))));
         changes.add(StoreChange(
-            kind: kind, id: id, type: StoreChangeType.deleted));
+            kind: kind, id: entry.key, type: StoreChangeType.deleted));
       }
     }
     _write(kept);
@@ -187,10 +233,15 @@ class PrefsCollection<T> {
   bool delete(String id) {
     final items = list();
     final before = items.length;
+    final existing = items.where((x) => idOf(x) == id).toList();
     items.removeWhere((x) => idOf(x) == id);
     if (items.length == before) return false;
     _write(items);
-    tombstones.record(SyncTombstone(id: id, kind: kind, deletedAt: clock()));
+    tombstones.record(SyncTombstone(
+        id: id,
+        kind: kind,
+        deletedAt: _nextStamp(
+            existing.isEmpty ? null : updatedAtOf(existing.first))));
     _emit(id, StoreChangeType.deleted, StoreChangeOrigin.local);
     return true;
   }

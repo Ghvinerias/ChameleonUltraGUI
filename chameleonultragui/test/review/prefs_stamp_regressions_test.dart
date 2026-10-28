@@ -2,7 +2,6 @@
 // code on purpose; see docs/review-phone-regressions.md (findings P1, P2, P3).
 import 'package:chameleonultragui/core/stores/prefs_card_store.dart';
 import 'package:chameleonultragui/helpers/definitions.dart';
-import 'package:chameleonultragui/models/card_save.dart';
 import 'package:chameleonultragui/models/sync_tombstone.dart';
 import 'package:chameleonultragui/sharedprefsprovider.dart';
 import 'package:flutter_test/flutter_test.dart';
