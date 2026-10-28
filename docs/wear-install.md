@@ -1,5 +1,7 @@
 # Installing the Wear OS app on the watch
 
+Dev builds (the ones from CI without the real keystore, and local debug builds) install as **`io.chameleon.ultra.dev`** with the label **"CU GUI Dev"**. They sit beside the Play Store app (`io.chameleon.ultra`) and keep separate data, so installing them never touches your existing cards or settings. Phone and watch dev builds share the package name and signing key, which the phone <-> watch sync requires. The watch runs a 32-bit process; the watch APK includes `armeabi-v7a`.
+
 Status: the in-app wizard (Track 0D) is implemented and unit tested, but **has not been tested on a real watch**. Everything about Galaxy Watch / Wear OS 6 behaviour below is unverified unless stated otherwise.
 
 All paths use **ADB over Wi-Fi (Wireless debugging)**, which Wear OS 4 and later offer in Developer options.

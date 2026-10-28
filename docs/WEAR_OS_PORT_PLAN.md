@@ -12,7 +12,7 @@ Items marked **[verify]** are assumptions or unverified claims from research. A 
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | Distribution for now | Sideload only. The phone installs the watch APK (section 5). The Play Wear track is deferred. |
-| D2 | Build split | Gradle flavors `phone` / `wear`, same `applicationId` (`io.chameleon.ultra`). Fallback if flavors disrupt the existing release pipeline: a separate Gradle property plus a manifest overlay. |
+| D2 | Build split | **Done.** Gradle flavors `phone` / `wear` share one `applicationId`: `io.chameleon.ultra` for real release builds, `io.chameleon.ultra.dev` (label "CU GUI Dev") for debug and dev-signed builds, so a dev build installs beside the store app and never touches its data. |
 | D3 | Signing | Commit a dev-only keystore for debug and CI builds, so phone and watch builds always share a key. Release builds keep the real keystore secret. |
 | D4 | Sync semantics | Last-writer-wins per item id, with tombstones for deletes. Dictionaries have a "mirror phone to watch" switch. |
 | D5 | Hardnested on the watch | **Resolved: phone-only.** It crashed the app on the watch in the spike (about 1.2 GB needed vs about 605 MB available); see `docs/wear-spike-results.md`. |
@@ -299,7 +299,8 @@ flutter analyze && flutter test
 # phone
 flutter build apk --flavor phone --build-number <N>
 
-# watch (fat APK until 0C reports the ABI; then optionally --target-platform android-arm64)
+# watch: the Galaxy Watch 8 Classic runs a 32-bit process (spike), so the APK MUST keep armeabi-v7a.
+# Never restrict to arm64; a v7a-only watch build (--target-platform android-arm) would be about half the size.
 flutter build apk --flavor wear -t lib/wear/main_wear.dart --build-number <N>
 # output: build/app/outputs/flutter-apk/app-wear-release.apk   [verify exact name]
 
@@ -345,7 +346,7 @@ The critical path is 0A, then 0C, then T1, then F1, then H1. The effort is the s
 | Risk | Impact | Mitigation |
 |---|---|---|
 | BLE unstable on the watch | Project blocker | 0C spike before any investment. T3 reconnect and keep-alive. |
-| Watch ABI is 32-bit only (armeabi-v7a) **[verify]** | Install failure | 0A builds both ABIs. 0C reports the ABI. |
+| Watch ABI is 32-bit only (armeabi-v7a) | **Confirmed by the spike** | The watch build keeps all ABIs; arm64-only would not run. |
 | ADB library does not work with Wear OS 6 pairing | Layer C slips | Layers A and B work regardless. 0D evaluates two libraries. |
 | Signing mismatch | Sync and upgrades fail | D3, checked in CI with `apksigner`. |
 | Phone regression from T1 and T7 refactors | Broken main app | Characterization tests first, `feat/wear-os` isolation, smoke checklist. |
@@ -358,3 +359,12 @@ Sources used for the research claims:
 - [AndroidAPS Wear OS setup (Wear Installer 2 workflow)](https://androidaps.readthedocs.io/nl/latest/WearOS/WearOsSmartwatch.html)
 - [adb-kt](https://github.com/rhythmcache/adb-kt), [Kadb](https://github.com/flyfishxu/Kadb), [dadb](https://github.com/mobile-dev-inc/dadb)
 - [watch_connectivity on pub.dev](https://pub.dev/packages/watch_connectivity)
+
+
+## 10. Progress log
+
+- Stage 0 (flavors, signing, contracts, installer) and the G0 hardware spike: done; results in `docs/wear-spike-results.md`.
+- Wave 1 (T1a/T1b read and slot services, T2 UI kit, T3 BLE connection, T4 sync engine, T5 Data Layer plugin, T7 stores): merged on `feat/wear-os`.
+- Review of the phone refactors: `docs/review-phone-regressions.md`; the three medium store findings (P1-P3) are fixed.
+- Wave 2 (feature screens F1-F6): in progress. Watch app composition root: `lib/wear/services/`.
+- Still needs real devices: phone <-> watch sync over the Data Layer (T5/F6), bezel feel, round-screen layouts, a full read/save/write-to-slot pass with a Chameleon.
