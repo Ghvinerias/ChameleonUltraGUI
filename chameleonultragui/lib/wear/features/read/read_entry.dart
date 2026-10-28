@@ -1,8 +1,8 @@
-import 'package:chameleonultragui/wear/navigation/wear_destinations.dart';
+import 'package:chameleonultragui/wear/features/read/read_menu_page.dart';
+import 'package:chameleonultragui/wear/services/connection_gate.dart';
 import 'package:flutter/widgets.dart';
 
-/// Entry point of the "Read" destination. The track that owns this
-/// folder replaces the body with the real screen; everything else about the
-/// feature lives in this folder.
+/// Entry point of the "Read" destination: the read menu behind the
+/// connection gate.
 Widget readEntry(BuildContext context) =>
-    const ComingSoonPage(id: WearDestinationId.read);
+    WearConnectionGate(builder: (_, _) => const ReadMenuPage());
