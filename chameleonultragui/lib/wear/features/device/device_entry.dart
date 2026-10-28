@@ -1,8 +1,6 @@
-import 'package:chameleonultragui/wear/navigation/wear_destinations.dart';
+import 'package:chameleonultragui/wear/features/device/device_page.dart';
 import 'package:flutter/widgets.dart';
 
-/// Entry point of the "Device" destination. The track that owns this
-/// folder replaces the body with the real screen; everything else about the
-/// feature lives in this folder.
-Widget deviceEntry(BuildContext context) =>
-    const ComingSoonPage(id: WearDestinationId.device);
+/// Entry point of the "Device" destination: info, settings, BLE and
+/// disconnect/forget for the connected Chameleon.
+Widget deviceEntry(BuildContext context) => const DevicePage();
