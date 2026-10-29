@@ -366,5 +366,11 @@ Sources used for the research claims:
 - Stage 0 (flavors, signing, contracts, installer) and the G0 hardware spike: done; results in `docs/wear-spike-results.md`.
 - Wave 1 (T1a/T1b read and slot services, T2 UI kit, T3 BLE connection, T4 sync engine, T5 Data Layer plugin, T7 stores): merged on `feat/wear-os`.
 - Review of the phone refactors: `docs/review-phone-regressions.md`; the three medium store findings (P1-P3) are fixed.
-- Wave 2 (feature screens F1-F6): in progress. Watch app composition root: `lib/wear/services/`.
-- Still needs real devices: phone <-> watch sync over the Data Layer (T5/F6), bezel feel, round-screen layouts, a full read/save/write-to-slot pass with a Chameleon.
+- Wave 2 (feature screens F1-F6): merged. Watch app composition root: `lib/wear/services/`.
+- Decision (2026-10-29): the port stays in this fork and is not sent upstream. Sync stays manual (both apps open on their sync screens); no background sync.
+- Hardware pass on a Galaxy Watch 8 Classic, a Galaxy S23 Ultra and a Chameleon Ultra (firmware 2.2), 2026-10-29:
+  - Passed: connect (about 4 s), Read HF with no card, Mifare Classic 1K read (32/32 keys in under 15 s, full dump in about 20 s), save to watch, load a saved card into an empty slot (under 5 s, verified on the Chameleon), slot overview, slot detail, slot settings write (toggle persists and was restored), device info.
+  - Passed: phone <-> watch sync over the Data Layer (Bluetooth): sync check (ping about 95 ms, about 100 KB/s each way), watch -> phone and phone -> watch merges of cards and dictionaries (8 cards and 5 dictionaries in 4.9 s), counts match on both sides.
+  - Fixed after the run: layout moved into the square inscribed in the round screen; progress drawn as an edge arc; slot-ring taps on the lower segments; dictionary list labels and pill; duplicate keys across dictionaries tried once; Diagnostics and the widget gallery hidden in release builds.
+  - Not tested: LF read and the continuous scans (no LF card), NTAG, bezel direction, reconnect after a Chameleon power cycle, sync deletes / mirror mode / cancel / Bluetooth loss mid-sync, device-settings writes, phone regression pass of the refactored read/slot code.
+  - Observed: the watch turned auto-rotate on again by itself (`accelerometer_rotation`); our app cannot write system settings. A first Read HF straight after connecting once reported "No card"; Retry worked.
