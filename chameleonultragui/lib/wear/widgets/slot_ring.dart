@@ -42,31 +42,46 @@ class SlotRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SizedBox.square(
-      dimension: size,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapUp: onSlotTap == null
-            ? null
-            : (d) {
-                final i = slotAt(d.localPosition, size, strokeWidth);
-                if (i != null) onSlotTap!(i);
-              },
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            CustomPaint(
-              size: Size.square(size),
-              painter: _SlotRingPainter(states, strokeWidth, scheme.primary),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The parent may offer less room than [size] (the safe square on the
+        // watch is smaller than the ring was designed for): paint and hit-test
+        // at the size we are really given.
+        final actual = math.min(
+          size,
+          math.min(constraints.maxWidth, constraints.maxHeight),
+        );
+        return SizedBox.square(
+          dimension: actual,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: onSlotTap == null
+                ? null
+                : (d) {
+                    final i = slotAt(d.localPosition, actual, strokeWidth);
+                    if (i != null) onSlotTap!(i);
+                  },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size.square(actual),
+                  painter: _SlotRingPainter(
+                    states,
+                    strokeWidth,
+                    scheme.primary,
+                  ),
+                ),
+                if (child != null)
+                  Padding(
+                    padding: EdgeInsets.all(strokeWidth + 10),
+                    child: Center(child: child),
+                  ),
+              ],
             ),
-            if (child != null)
-              Padding(
-                padding: EdgeInsets.all(strokeWidth + 10),
-                child: Center(child: child),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

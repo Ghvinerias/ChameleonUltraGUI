@@ -5,6 +5,7 @@ import 'package:chameleonultragui/wear/navigation/home_page.dart';
 import 'package:chameleonultragui/wear/navigation/wear_registrations.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
 import 'package:chameleonultragui/wear/widgets/compact_list_tile.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Root of the watch app: dark OLED theme, clamped text scale, English
@@ -45,14 +46,14 @@ class _Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) => WearHomePage(
     extraEntries: [
-      CompactListTile(
-        key: const ValueKey('home-gallery'),
-        title: AppLocalizations.of(context)!.wear_shell_gallery,
-        leading: const Icon(Icons.widgets_outlined),
-        onTap: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const WidgetGallery())),
-      ),
+      if (!kReleaseMode)
+        CompactListTile(
+          key: const ValueKey('home-gallery'),
+          title: AppLocalizations.of(context)!.wear_shell_gallery,
+          leading: const Icon(Icons.widgets_outlined),
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const WidgetGallery())),
+        ),
     ],
   );
 }
