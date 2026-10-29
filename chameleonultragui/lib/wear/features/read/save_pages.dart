@@ -7,7 +7,8 @@ import 'package:chameleonultragui/wear/features/read/strings.dart';
 import 'package:chameleonultragui/wear/features/shared/slot_picker.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/widgets/confirm_dialog.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/big_stat.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/wear_button.dart';
 import 'package:flutter/material.dart';
@@ -249,29 +250,23 @@ class _WriteToSlotPageState extends State<WriteToSlotPage> {
         onPopInvokedWithResult: (didPop, _) {
           if (didPop) unawaited(_upload?.cancel());
         },
-        child: RoundScaffold(
-          title: ReadStrings.writeTitle,
-          children: [
-            Center(
-              child: ProgressRing(
-                value: _percent / 100,
-                size: 104,
-                child: Text('$_percent%', style: theme.textTheme.titleMedium),
+        child: WithEdgeProgress(
+          value: _percent / 100,
+          child: RoundScaffold(
+            title: ReadStrings.writeTitle,
+            children: [
+              BigStat(
+                '$_percent%',
+                '${ReadStrings.writing} ${widget.slot + 1}',
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${ReadStrings.writing} ${widget.slot + 1}',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 6),
-            WearButton(
-              label: ReadStrings.cancel,
-              style: WearButtonStyle.tonal,
-              onPressed: () => unawaited(_upload?.cancel()),
-            ),
-          ],
+              const SizedBox(height: 8),
+              WearButton(
+                label: ReadStrings.cancel,
+                style: WearButtonStyle.tonal,
+                onPressed: () => unawaited(_upload?.cancel()),
+              ),
+            ],
+          ),
         ),
       );
     }

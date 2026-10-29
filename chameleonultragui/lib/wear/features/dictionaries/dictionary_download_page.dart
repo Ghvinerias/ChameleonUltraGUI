@@ -4,7 +4,8 @@ import 'package:chameleonultragui/wear/features/dictionaries/strings.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
 import 'package:chameleonultragui/wear/widgets/compact_list_tile.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/big_stat.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/status_pill.dart';
 import 'package:chameleonultragui/wear/widgets/wear_button.dart';
@@ -119,38 +120,30 @@ class _DictionaryDownloadPageState extends State<DictionaryDownloadPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (_running != null) {
-      return RoundScaffold(
-        title: DictStrings.downloading,
-        children: [
-          Center(
-            child: ProgressRing(
-              value: _progress,
-              size: 96,
-              strokeWidth: 8,
-              child: _progress == null
-                  ? const SizedBox.shrink()
-                  : Text(
-                      '${(_progress! * 100).round()}%',
-                      style: theme.textTheme.titleMedium,
-                    ),
+      return WithEdgeProgress(
+        value: _progress,
+        child: RoundScaffold(
+          title: DictStrings.downloading,
+          children: [
+            if (_progress != null)
+              BigStat('${(_progress! * 100).round()}%', null),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                _running!.name,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              _running!.name,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
+            WearButton(
+              label: DictStrings.cancel,
+              style: WearButtonStyle.tonal,
+              onPressed: _abort,
             ),
-          ),
-          WearButton(
-            label: DictStrings.cancel,
-            style: WearButtonStyle.tonal,
-            onPressed: _abort,
-          ),
-        ],
+          ],
+        ),
       );
     }
     return RoundScaffold(

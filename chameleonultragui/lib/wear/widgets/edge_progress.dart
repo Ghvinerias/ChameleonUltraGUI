@@ -138,3 +138,29 @@ class _EdgeProgressPainter extends CustomPainter {
       old.stroke != stroke ||
       old.color != color;
 }
+
+/// [child] with an [EdgeProgress] arc drawn over the screen edge.
+class WithEdgeProgress extends StatelessWidget {
+  const WithEdgeProgress({
+    super.key,
+    required this.value,
+    required this.child,
+    this.animate = true,
+  });
+
+  /// Null = indeterminate.
+  final double? value;
+  final Widget child;
+  final bool animate;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      child,
+      Positioned.fill(
+        child: EdgeProgress(value: value, animate: animate),
+      ),
+    ],
+  );
+}

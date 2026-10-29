@@ -19,6 +19,7 @@ class SectorKeyMap extends StatelessWidget {
   final List<SectorKeyState> states;
   final int sectors;
   final bool showMissing;
+
   /// Null = fill the available width.
   final double? width;
 

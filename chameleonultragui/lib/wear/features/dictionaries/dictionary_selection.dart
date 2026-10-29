@@ -40,7 +40,46 @@ class WearDictionarySelection {
     final all = await services.dictionaryStore.getDictionaries(
       keyLength: keyLength,
     );
-    return resolve(all, await selectedIds());
+    return dedupeKeys(resolve(all, await selectedIds()));
+  }
+
+  /// The same key often sits in several dictionaries (a downloaded list and
+  /// an imported copy of it). Keeps each key once, in the order of the first
+  /// dictionary that has it, so a key check never tries a key twice. Returns
+  /// copies; dictionaries left without keys are dropped.
+  static List<Dictionary> dedupeKeys(List<Dictionary> dictionaries) {
+    final seen = <String>{};
+    final result = <Dictionary>[];
+    for (final d in dictionaries) {
+      final unique = [
+        for (final key in d.keys)
+          if (seen.add(key.join(','))) key,
+      ];
+      if (unique.isEmpty) continue;
+      result.add(
+        Dictionary(
+          id: d.id,
+          name: d.name,
+          keys: unique,
+          color: d.color,
+          keyLength: d.keyLength,
+          folderId: d.folderId,
+          updatedAt: d.updatedAt,
+        ),
+      );
+    }
+    return result;
+  }
+
+  /// Number of distinct keys across [dictionaries].
+  static int uniqueKeyCount(Iterable<Dictionary> dictionaries) {
+    final seen = <String>{};
+    for (final d in dictionaries) {
+      for (final key in d.keys) {
+        seen.add(key.join(','));
+      }
+    }
+    return seen.length;
   }
 
   /// Pure selection rule: null [ids] = all, otherwise the existing

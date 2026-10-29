@@ -9,7 +9,8 @@ import 'package:chameleonultragui/wear/features/sync/strings.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
 import 'package:chameleonultragui/wear/widgets/compact_list_tile.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/big_stat.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/status_pill.dart';
 import 'package:chameleonultragui/wear/widgets/wear_button.dart';
@@ -66,14 +67,19 @@ class _SyncScreenState extends State<SyncScreen> {
     final c = _c!;
     return ListenableBuilder(
       listenable: c,
-      builder: (context, _) => RoundScaffold(
-        title: WatchSyncStrings.title,
-        children: [
-          Center(child: _status(c)),
-          const SizedBox(height: 8),
-          ..._body(context, c),
-        ],
-      ),
+      builder: (context, _) {
+        final scaffold = RoundScaffold(
+          title: WatchSyncStrings.title,
+          children: [
+            Center(child: _status(c)),
+            const SizedBox(height: 8),
+            ..._body(context, c),
+          ],
+        );
+        return c.running
+            ? WithEdgeProgress(value: c.progress, child: scaffold)
+            : scaffold;
+      },
     );
   }
 
@@ -133,17 +139,10 @@ class _SyncScreenState extends State<SyncScreen> {
     final theme = Theme.of(context);
     final p = c.progress;
     return [
-      Center(
-        child: ProgressRing(
-          key: const Key('sync-progress'),
-          value: p,
-          size: 96,
-          strokeWidth: 8,
-          child: Text(
-            p == null ? '...' : '${(p * 100).round()}%',
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
+      BigStat(
+        p == null ? '...' : '${(p * 100).round()}%',
+        null,
+        key: const Key('sync-progress'),
       ),
       const SizedBox(height: 6),
       Text(

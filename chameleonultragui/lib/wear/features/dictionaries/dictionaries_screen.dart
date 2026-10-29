@@ -141,7 +141,7 @@ class _DictionariesScreenState extends State<DictionariesScreen> {
       dicts,
       _selected,
     ).where((d) => d.keyLength == kMfcKeyHexLength);
-    final totalKeys = checked.fold<int>(0, (n, d) => n + d.keys.length);
+    final totalKeys = WearDictionarySelection.uniqueKeyCount(checked);
     final estimate = estimateKeyCheck(totalKeys);
     final large = estimate >= kLargeCheckThreshold;
 
@@ -158,8 +158,7 @@ class _DictionariesScreenState extends State<DictionariesScreen> {
       children: [
         Center(
           child: StatusPill(
-            label:
-                '${DictStrings.total(totalKeys)} ${DictStrings.estimate(formatEstimate(estimate))}',
+            label: DictStrings.pill(totalKeys, formatEstimate(estimate)),
             kind: large ? StatusKind.warning : StatusKind.info,
             icon: large ? Icons.warning_amber_rounded : Icons.vpn_key_outlined,
           ),
@@ -202,8 +201,9 @@ class _DictionariesScreenState extends State<DictionariesScreen> {
           for (final d in groups[path]!)
             CompactListTile(
               title: d.name.isEmpty ? '(unnamed)' : d.name,
+              titleMaxLines: 3,
               subtitle:
-                  '${DictStrings.keyCount(d.keys.length)} · ${DictStrings.keyBytes(d.keyLength)}',
+                  '${DictStrings.keyCount(d.keys.length)}\u00A0·\u00A0${DictStrings.keyBytes(d.keyLength)}',
               onTap: () => _open(DictionaryDetailPage(dictionaryId: d.id)),
               trailing: DictSwitch(
                 value: _isUsed(d) && d.keyLength == kMfcKeyHexLength,

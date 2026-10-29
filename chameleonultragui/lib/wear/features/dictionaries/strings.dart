@@ -21,9 +21,13 @@ class DictStrings {
   static const cancelled = 'Cancelled';
 
   static String keyCount(int n) => n == 1 ? '1 key' : '$n keys';
-  static String keyBytes(int hexLength) => '${hexLength ~/ 2}-byte';
+  // Non-breaking hyphen so "16-byte" never wraps in the middle.
+  static String keyBytes(int hexLength) => '${hexLength ~/ 2}\u2011byte';
   static String total(int keys) => '${keyCount(keys)} to try';
   static String estimate(String time) => '~$time';
+
+  /// Short enough for the summary pill: "9104 keys · ~2 min".
+  static String pill(int keys, String time) => '$keys keys\u00A0·\u00A0~$time';
   static const largeWarning =
       'Many keys: key checks will take a while. Turn some dictionaries off.';
   static String deleteMessage(String name) => 'Delete "$name"?';

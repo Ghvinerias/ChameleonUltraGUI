@@ -12,6 +12,7 @@ import 'package:chameleonultragui/wear/features/read/save_pages.dart';
 import 'package:chameleonultragui/wear/features/read/strings.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
+import 'package:chameleonultragui/wear/widgets/big_stat.dart';
 import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/scan_pulse.dart';
@@ -236,7 +237,7 @@ class _ReadPageState extends State<ReadPage> {
     final total = k?.sectorsTotal ?? _sectors(c);
     final done = k?.sectorsDone ?? 0;
     return [
-      _BigStat('$done/$total', ReadStrings.checkingKeys),
+      BigStat('$done/$total', ReadStrings.checkingKeys),
       const SizedBox(height: 6),
       SectorKeyMap(states: k?.sectorStates ?? const [], sectors: total),
       const SizedBox(height: 8),
@@ -259,7 +260,7 @@ class _ReadPageState extends State<ReadPage> {
       if (r != null && r.viaBackdoor) ReadStrings.viaBackdoor,
     ].join(' · ');
     return [
-      _BigStat(
+      BigStat(
         r == null ? '…' : '${r.keysFound}',
         r == null ? ReadStrings.recovering : ReadStrings.attackName(r.attack),
       ),
@@ -280,7 +281,7 @@ class _ReadPageState extends State<ReadPage> {
   List<Widget> _dumping(ReadController c) {
     final d = c.dumpProgress;
     return [
-      _BigStat(
+      BigStat(
         d == null ? '…' : '${(d.fraction * 100).round()}%',
         ReadStrings.dumping,
       ),
@@ -567,42 +568,6 @@ class _InfoRow extends StatelessWidget {
           Text(value, style: theme.textTheme.bodyMedium),
         ],
       ),
-    );
-  }
-}
-
-/// Large figure with a caption underneath: the centre of a progress stage
-/// (the progress itself runs along the screen edge).
-class _BigStat extends StatelessWidget {
-  const _BigStat(this.value, this.caption);
-
-  final String value;
-  final String caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 30,
-              height: 1.1,
-            ),
-          ),
-        ),
-        Text(
-          caption,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
     );
   }
 }

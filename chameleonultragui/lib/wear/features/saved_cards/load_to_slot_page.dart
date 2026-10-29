@@ -8,7 +8,8 @@ import 'package:chameleonultragui/wear/features/shared/slot_picker.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
 import 'package:chameleonultragui/wear/widgets/confirm_dialog.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/big_stat.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/wear_button.dart';
 import 'package:flutter/material.dart';
@@ -163,28 +164,19 @@ class _LoadToSlotPageState extends State<LoadToSlotPage> {
           ),
         );
       case _Phase.uploading:
-        return RoundScaffold(
-          children: [
-            Center(
-              child: ProgressRing(
-                value: _percent / 100,
-                size: 88,
-                strokeWidth: 9,
-                child: Text('$_percent%', style: theme.textTheme.titleMedium),
+        return WithEdgeProgress(
+          value: _percent / 100,
+          child: RoundScaffold(
+            children: [
+              BigStat('$_percent%', SavedCardsStrings.uploading(_slot)),
+              const SizedBox(height: 8),
+              WearButton(
+                label: SavedCardsStrings.cancelUpload,
+                style: WearButtonStyle.tonal,
+                onPressed: () => _upload?.cancel(),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              SavedCardsStrings.uploading(_slot),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall,
-            ),
-            WearButton(
-              label: SavedCardsStrings.cancelUpload,
-              style: WearButtonStyle.tonal,
-              onPressed: () => _upload?.cancel(),
-            ),
-          ],
+            ],
+          ),
         );
       case _Phase.done:
         return RoundScaffold(

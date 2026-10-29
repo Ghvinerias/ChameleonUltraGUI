@@ -14,7 +14,7 @@ import 'package:chameleonultragui/wear/features/saved_cards/saved_cards_entry.da
 import 'package:chameleonultragui/wear/features/saved_cards/saved_cards_model.dart';
 import 'package:chameleonultragui/wear/features/saved_cards/saved_cards_page.dart';
 import 'package:chameleonultragui/wear/features/saved_cards/strings.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/slot_ring.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -427,7 +427,7 @@ void main() {
       await tapSlot(tester, 2);
       await tapButton(tester, 'Load into 3');
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(ProgressRing), findsOneWidget);
+      expect(find.byType(EdgeProgress), findsOneWidget);
       expect(find.text(SavedCardsStrings.uploading(2)), findsOneWidget);
 
       gate.complete();

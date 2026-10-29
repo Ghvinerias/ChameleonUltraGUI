@@ -24,7 +24,14 @@ Dictionary dict(String name, int n, {int keyLength = 12, int seed = 0}) =>
       keys: List.generate(
         n,
         (i) => Uint8List.fromList(
-          List.generate(keyLength ~/ 2, (j) => (i + j + seed) & 0xff),
+          List.generate(
+            keyLength ~/ 2,
+            // Same as before for small i (00 01 02 ...); the last byte also
+            // carries i >> 8 so thousands of keys stay distinct.
+            (j) =>
+                (i + j + seed + (j == keyLength ~/ 2 - 1 ? (i >> 8) * 17 : 0)) &
+                0xff,
+          ),
         ),
       ),
     );
@@ -116,8 +123,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Default'), findsOneWidget);
       expect(find.text('Hotel', skipOffstage: false), findsOneWidget);
-      expect(find.text('3 keys · 6-byte'), findsOneWidget);
-      expect(find.textContaining('5 keys to try'), findsOneWidget);
+      expect(find.text('3 keys\u00A0·\u00A06\u2011byte'), findsOneWidget);
+      expect(find.textContaining('5 keys'), findsWidgets);
     });
 
     testWidgets('toggle materialises selection, persists, Use all resets', (
@@ -141,6 +148,24 @@ void main() {
       await tapScrolled(tester, find.text(DictStrings.useAll));
       await tester.pumpAndSettle();
       expect(await WearDictionarySelection.selectedIds(), isNull);
+    });
+
+    testWidgets('a key in two dictionaries is counted and tried once', (
+      tester,
+    ) async {
+      final rig = await createWearRig();
+      final store = rig.services.dictionaryStore;
+      await store.saveDictionary(dict('One', 3));
+      await store.saveDictionary(dict('Copy of one', 3));
+      await store.saveDictionary(dict('Two', 2, seed: 7));
+      await rig.pump(tester, const DictionariesScreen());
+      await tester.pumpAndSettle();
+      expect(find.textContaining('5 keys'), findsWidgets);
+      expect(find.textContaining('8 keys'), findsNothing);
+
+      final active = await WearDictionarySelection.active(rig.services);
+      expect(active.fold<int>(0, (n, d) => n + d.keys.length), 5);
+      expect(active.map((d) => d.name), ['One', 'Two']);
     });
 
     testWidgets('warns when many keys', (tester) async {

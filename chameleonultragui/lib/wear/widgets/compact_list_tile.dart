@@ -10,6 +10,7 @@ class CompactListTile extends StatelessWidget {
     this.leading,
     this.trailing,
     this.onTap,
+    this.titleMaxLines = 2,
   });
 
   final String title;
@@ -17,6 +18,9 @@ class CompactListTile extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final VoidCallback? onTap;
+
+  /// Lines the title may use before it is cut with an ellipsis.
+  final int titleMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +56,7 @@ class CompactListTile extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          maxLines: 2,
+                          maxLines: titleMaxLines,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyLarge,
                         ),
