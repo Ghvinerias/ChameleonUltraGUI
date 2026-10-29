@@ -22,7 +22,6 @@ class WearHomePage extends StatelessWidget {
             key: ValueKey('home-${id.name}'),
             title: id.label(l),
             leading: Icon(id.icon),
-            trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: WearDestinations.builderFor(id))),

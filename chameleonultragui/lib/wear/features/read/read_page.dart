@@ -12,7 +12,7 @@ import 'package:chameleonultragui/wear/features/read/save_pages.dart';
 import 'package:chameleonultragui/wear/features/read/strings.dart';
 import 'package:chameleonultragui/wear/services/wear_services.dart';
 import 'package:chameleonultragui/wear/theme/wear_theme.dart';
-import 'package:chameleonultragui/wear/widgets/progress_ring.dart';
+import 'package:chameleonultragui/wear/widgets/edge_progress.dart';
 import 'package:chameleonultragui/wear/widgets/round_scaffold.dart';
 import 'package:chameleonultragui/wear/widgets/scan_pulse.dart';
 import 'package:chameleonultragui/wear/widgets/status_pill.dart';
@@ -96,13 +96,46 @@ class _ReadPageState extends State<ReadPage> {
       },
       child: ListenableBuilder(
         listenable: c,
-        builder: (context, _) => RoundScaffold(
-          title: _title(widget.mode),
-          controller: _scroll,
-          children: _children(context, c),
-        ),
+        builder: (context, _) {
+          final scaffold = RoundScaffold(
+            title: _title(widget.mode),
+            controller: _scroll,
+            children: _children(context, c),
+          );
+          final progress = _edgeProgress(c);
+          if (progress == null) return scaffold;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              scaffold,
+              Positioned.fill(
+                child: EdgeProgress(
+                  value: progress.value,
+                  animate: widget.animate,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  /// Progress along the screen edge for the long-running stages; null when
+  /// the stage has none. Inner value null = indeterminate.
+  ({double? value})? _edgeProgress(ReadController c) {
+    switch (c.stage) {
+      case ReadStage.checkingKeys:
+        final k = c.keyCheck;
+        final total = k?.sectorsTotal ?? _sectors(c);
+        return (value: total == 0 ? null : (k?.sectorsDone ?? 0) / total);
+      case ReadStage.recovering:
+        return (value: c.recovery?.progress);
+      case ReadStage.dumping:
+        return (value: c.dumpProgress?.fraction);
+      default:
+        return null;
+    }
   }
 
   List<Widget> _children(BuildContext context, ReadController c) {
@@ -203,24 +236,10 @@ class _ReadPageState extends State<ReadPage> {
     final total = k?.sectorsTotal ?? _sectors(c);
     final done = k?.sectorsDone ?? 0;
     return [
-      Center(
-        child: ProgressRing(
-          value: total == 0 ? null : done / total,
-          size: 96,
-          strokeWidth: 8,
-          child: Text(
-            '$done/$total',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-      ),
+      _BigStat('$done/$total', ReadStrings.checkingKeys),
       const SizedBox(height: 6),
-      _Message(ReadStrings.checkingKeys),
-      if (k != null) ...[
-        const SizedBox(height: 4),
-        SectorKeyMap(states: k.sectorStates, sectors: total),
-      ],
-      const SizedBox(height: 4),
+      SectorKeyMap(states: k?.sectorStates ?? const [], sectors: total),
+      const SizedBox(height: 8),
       WearButton(
         label: ReadStrings.cancel,
         style: WearButtonStyle.tonal,
@@ -240,27 +259,16 @@ class _ReadPageState extends State<ReadPage> {
       if (r != null && r.viaBackdoor) ReadStrings.viaBackdoor,
     ].join(' · ');
     return [
-      Center(
-        child: ProgressRing(
-          value: r?.progress,
-          size: 96,
-          strokeWidth: 8,
-          child: Text(
-            r == null ? '…' : '${r.keysFound}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-      ),
-      const SizedBox(height: 6),
-      _Message(
+      _BigStat(
+        r == null ? '…' : '${r.keysFound}',
         r == null ? ReadStrings.recovering : ReadStrings.attackName(r.attack),
       ),
       if (detail.isNotEmpty) _Message(detail, muted: true),
       if (states != null) ...[
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         SectorKeyMap(states: states, sectors: sectors, showMissing: true),
       ],
-      const SizedBox(height: 4),
+      const SizedBox(height: 8),
       WearButton(
         label: ReadStrings.cancel,
         style: WearButtonStyle.tonal,
@@ -272,20 +280,12 @@ class _ReadPageState extends State<ReadPage> {
   List<Widget> _dumping(ReadController c) {
     final d = c.dumpProgress;
     return [
-      Center(
-        child: ProgressRing(
-          value: d?.fraction,
-          size: 96,
-          strokeWidth: 8,
-          child: Text(
-            d == null ? '…' : '${(d.fraction * 100).round()}%',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
+      _BigStat(
+        d == null ? '…' : '${(d.fraction * 100).round()}%',
+        ReadStrings.dumping,
       ),
-      const SizedBox(height: 6),
-      _Message(ReadStrings.dumping),
-      const SizedBox(height: 4),
+      if (d != null) _Message('${d.blocksDone}/${d.blocksTotal}', muted: true),
+      const SizedBox(height: 8),
       WearButton(
         label: ReadStrings.cancel,
         style: WearButtonStyle.tonal,
@@ -567,6 +567,42 @@ class _InfoRow extends StatelessWidget {
           Text(value, style: theme.textTheme.bodyMedium),
         ],
       ),
+    );
+  }
+}
+
+/// Large figure with a caption underneath: the centre of a progress stage
+/// (the progress itself runs along the screen edge).
+class _BigStat extends StatelessWidget {
+  const _BigStat(this.value, this.caption);
+
+  final String value;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 30,
+              height: 1.1,
+            ),
+          ),
+        ),
+        Text(
+          caption,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }

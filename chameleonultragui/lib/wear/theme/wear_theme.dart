@@ -10,13 +10,19 @@ class WearMetrics {
   /// Highest text scale honoured by the app.
   static const double maxTextScale = 1.3;
 
+  /// Content lives in the square inscribed in the round screen: its side is
+  /// 1/sqrt(2) of the diameter, so each edge is (1 - 1/sqrt(2)) / 2 = 14.6 %
+  /// of the short side away from the screen edge. Everything inside that
+  /// square is guaranteed to be visible on a round display.
+  static const double safeInset = 0.146;
+
   /// Fraction of the short side kept free on each side of scrolling content.
-  static const double sideInset = 0.12;
+  static const double sideInset = safeInset;
 
   /// Fraction of the short side kept free above the first / below the last
-  /// scrolling item, so content at rest sits inside the circle.
-  static const double topInset = 0.17;
-  static const double bottomInset = 0.2;
+  /// scrolling item, so content at rest sits inside the square.
+  static const double topInset = safeInset;
+  static const double bottomInset = safeInset;
 }
 
 class WearColors {

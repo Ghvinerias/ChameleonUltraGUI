@@ -11,17 +11,21 @@ class SectorKeyMap extends StatelessWidget {
     required this.states,
     required this.sectors,
     this.showMissing = false,
-    this.width = 144,
+    this.width,
+    this.cellHeight = 30,
   });
 
   /// Length 80 (sector * 2 + keyType) as in `MifareClassicReadState`.
   final List<SectorKeyState> states;
   final int sectors;
   final bool showMissing;
-  final double width;
+  /// Null = fill the available width.
+  final double? width;
+
+  /// Height of one sector cell (key A bar over key B bar).
+  final double cellHeight;
 
   static const columns = 8;
-  static const cellHeight = 20.0;
 
   /// Number of found keys among the [sectors] sectors.
   static int foundCount(List<SectorKeyState> states, int sectors) {
@@ -39,11 +43,23 @@ class SectorKeyMap extends StatelessWidget {
     return Semantics(
       label: 'Keys found: $found of ${sectors * 2}',
       child: ExcludeSemantics(
-        child: Center(
-          child: CustomPaint(
-            size: Size(width, rows * cellHeight),
-            painter: _KeyMapPainter(List.of(states), sectors, showMissing),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final w =
+                width ??
+                (constraints.hasBoundedWidth ? constraints.maxWidth : 146.0);
+            return Center(
+              child: CustomPaint(
+                size: Size(w, rows * cellHeight),
+                painter: _KeyMapPainter(
+                  List.of(states),
+                  sectors,
+                  showMissing,
+                  cellHeight,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -51,15 +67,17 @@ class SectorKeyMap extends StatelessWidget {
 }
 
 class _KeyMapPainter extends CustomPainter {
-  _KeyMapPainter(this.states, this.sectors, this.showMissing);
+  _KeyMapPainter(this.states, this.sectors, this.showMissing, this.cellHeight);
 
   final List<SectorKeyState> states;
   final int sectors;
   final bool showMissing;
+  final double cellHeight;
 
   @override
   void paint(Canvas canvas, Size size) {
     final cellW = size.width / SectorKeyMap.columns;
+    final barH = (cellHeight - 6) / 2;
     for (var s = 0; s < sectors; s++) {
       final col = s % SectorKeyMap.columns;
       final row = s ~/ SectorKeyMap.columns;
@@ -67,12 +85,12 @@ class _KeyMapPainter extends CustomPainter {
         final idx = s * 2 + k;
         final state = idx < states.length ? states[idx] : SectorKeyState.none;
         final rect = Rect.fromLTWH(
-          col * cellW + 2,
-          row * SectorKeyMap.cellHeight + k * 9 + 1,
-          cellW - 4,
-          7,
+          col * cellW + 1.5,
+          row * cellHeight + 2 + k * (barH + 2),
+          cellW - 3,
+          barH,
         );
-        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(3));
+        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
         switch (state) {
           case SectorKeyState.found:
             canvas.drawRRect(rrect, Paint()..color = WearColors.ok);
@@ -101,6 +119,7 @@ class _KeyMapPainter extends CustomPainter {
   bool shouldRepaint(_KeyMapPainter old) =>
       old.sectors != sectors ||
       old.showMissing != showMissing ||
+      old.cellHeight != cellHeight ||
       !_same(old.states, states);
 
   static bool _same(List<SectorKeyState> a, List<SectorKeyState> b) {

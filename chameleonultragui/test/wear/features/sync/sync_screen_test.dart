@@ -345,18 +345,10 @@ void main() {
       expect(shown('sync-report'), isTrue);
       expect(tester.takeException(), isNull); // report
 
-      await tester.dragUntilVisible(
-        find.byKey(const Key('check-run')),
-        find.byType(ListView),
-        const Offset(0, -150),
-      );
+      await reveal(tester, 'check-run');
       await tester.tap(find.byKey(const Key('check-run')));
       await settle(tester, () => shown('check-verdict'), maxMs: 30000);
-      await tester.dragUntilVisible(
-        find.byKey(const Key('check-receive')),
-        find.byType(ListView),
-        const Offset(0, -150),
-      );
+      await reveal(tester, 'check-receive');
       expect(tester.takeException(), isNull); // check results
     });
   }

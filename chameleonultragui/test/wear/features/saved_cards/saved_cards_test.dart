@@ -281,6 +281,11 @@ void main() {
     testWidgets('NTAG: pages', (tester) async {
       await openDetail(tester, ntag215());
       expect(find.textContaining('NTAG215'), findsOneWidget);
+      await tester.dragUntilVisible(
+        find.textContaining('135 pages', findRichText: true),
+        find.byType(ListView),
+        const Offset(0, -80),
+      );
       expect(
         find.textContaining('135 pages', findRichText: true),
         findsOneWidget,

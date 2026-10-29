@@ -11,15 +11,15 @@ class RoundInsets {
     final s = MediaQuery.sizeOf(context).shortestSide;
     return EdgeInsets.fromLTRB(
       s * WearMetrics.sideInset,
-      s * (hasTitle ? WearMetrics.topInset * 0.75 : WearMetrics.topInset),
+      s * WearMetrics.topInset,
       s * WearMetrics.sideInset,
       s * WearMetrics.bottomInset,
     );
   }
 
-  /// Padding for fixed (non-scrolling) content: central ~80%.
+  /// Padding for fixed (non-scrolling) content: the inscribed square.
   static EdgeInsets fixed(BuildContext context) {
     final s = MediaQuery.sizeOf(context).shortestSide;
-    return EdgeInsets.symmetric(horizontal: s * 0.14, vertical: s * 0.16);
+    return EdgeInsets.all(s * WearMetrics.safeInset);
   }
 }
